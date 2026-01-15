@@ -12,6 +12,28 @@ export const api = {
     });
     return response.json();
   },
+
+  getReparaciones: async () => {
+    const response = await fetch(`${API_URL}/reparaciones`, {
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+        Authorization: `Bearer ${getToken()}`,
+      },
+    });
+    return response.json();
+  },
+
+  getReparacion: async (id) => {
+    const response = await fetch(`${API_URL}/reparaciones/${id}`, {
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+        Authorization: `Bearer ${getToken()}`,
+      },
+    });
+    return response.json();
+  },
 };
 
 export const getToken = () => localStorage.getItem("token");

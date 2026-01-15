@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { ConfigProvider, Layout, Button, Typography, Space } from 'antd';
 import { LogoutOutlined } from '@ant-design/icons';
 import Login from './components/Login';
+import Dashboard from './components/Dashboard';
 import { getToken, removeToken } from './services/api';
 
 const { Header, Content } = Layout;
@@ -64,7 +65,7 @@ function App() {
             </Space>
           </Header>
           <Content style={{ padding: 24, background: '#f0f2f5' }}>
-            <p>Dashboard - Sesión iniciada correctamente</p>
+            <Dashboard />
           </Content>
         </Layout>
       )}
