@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Input, Card, Table, Tag, Typography, Spin, Row, Col, Space, Select, Divider, Modal, Descriptions, Button } from 'antd';
-import { SearchOutlined, ToolOutlined, InboxOutlined, CheckCircleOutlined, SendOutlined, EyeOutlined } from '@ant-design/icons';
+import { Input, Card, Table, Tag, Typography, Spin, Row, Col, Space, Select, Divider, Modal, Descriptions, Button, Timeline } from 'antd';
+import { SearchOutlined, ToolOutlined, InboxOutlined, CheckCircleOutlined, SendOutlined, EyeOutlined, ClockCircleOutlined } from '@ant-design/icons';
 import { api } from '../services/api';
 
 const { Text, Title } = Typography;
@@ -49,6 +49,8 @@ function Dashboard() {
   const [modalVisible, setModalVisible] = useState(false);
   const [detalleReparacion, setDetalleReparacion] = useState(null);
   const [loadingDetalle, setLoadingDetalle] = useState(false);
+  const [actualizaciones, setActualizaciones] = useState([]);
+  const [loadingActualizaciones, setLoadingActualizaciones] = useState(false);
 
   useEffect(() => {
     cargarReparaciones();
@@ -77,16 +79,26 @@ function Dashboard() {
 
   const verDetalle = async (id) => {
     setLoadingDetalle(true);
+    setLoadingActualizaciones(true);
     setModalVisible(true);
+    setDetalleReparacion(null);
+    setActualizaciones([]);
     try {
-      const res = await api.getReparacion(id);
-      if (res.exito) {
-        setDetalleReparacion(res.datos);
+      const [resDetalle, resActualizaciones] = await Promise.all([
+        api.getReparacion(id),
+        api.getActualizaciones(id)
+      ]);
+      if (resDetalle.exito) {
+        setDetalleReparacion(resDetalle.datos);
+      }
+      if (resActualizaciones.exito) {
+        setActualizaciones(resActualizaciones.datos?.actualizaciones || []);
       }
     } catch (error) {
       console.error('Error al cargar detalle:', error);
     } finally {
       setLoadingDetalle(false);
+      setLoadingActualizaciones(false);
     }
   };
 
@@ -329,11 +341,61 @@ function Dashboard() {
               <Descriptions.Item label="Última Actualización">{detalleReparacion.ultima_actualizacion}</Descriptions.Item>
             </Descriptions>
 
-            <Descriptions title="Técnico Asignado" bordered size="small" column={2}>
+            <Descriptions title="Técnico Asignado" bordered size="small" column={2} style={{ marginBottom: 24 }}>
               <Descriptions.Item label="Nombre">{detalleReparacion.tecnico?.nombre}</Descriptions.Item>
               <Descriptions.Item label="No. Técnico">{detalleReparacion.tecnico?.numero}</Descriptions.Item>
               <Descriptions.Item label="Email" span={2}>{detalleReparacion.tecnico?.email}</Descriptions.Item>
             </Descriptions>
+
+            <Divider />
+
+            <Title level={5} style={{ marginBottom: 16, color: '#333' }}>
+              Historial de Actualizaciones
+            </Title>
+            {loadingActualizaciones ? (
+              <Spin style={{ display: 'block', margin: '20px auto' }} />
+            ) : actualizaciones.length > 0 ? (
+              <Timeline
+                mode="left"
+                items={actualizaciones.map((act, index) => ({
+                  key: act.id,
+                  dot: <ClockCircleOutlined style={{ fontSize: '16px', color: estadoConfig[act.estado_nuevo]?.border || '#1890ff' }} />,
+                  children: (
+                    <div style={{ marginLeft: 20 }}>
+                      <div style={{ marginBottom: 8 }}>
+                        <Tag color={estadoConfig[act.estado_anterior]?.color} style={{ marginRight: 8 }}>
+                          {estadoConfig[act.estado_anterior]?.label || act.estado_anterior}
+                        </Tag>
+                        <span style={{ margin: '0 8px', color: '#999' }}>→</span>
+                        <Tag color={estadoConfig[act.estado_nuevo]?.color}>
+                          {estadoConfig[act.estado_nuevo]?.label || act.estado_nuevo}
+                        </Tag>
+                      </div>
+                      <Text strong style={{ display: 'block', marginBottom: 4, color: '#333' }}>
+                        {act.descripcion}
+                      </Text>
+                      <div style={{ marginTop: 8, fontSize: 12, color: '#666' }}>
+                        <Text type="secondary">
+                          <strong>Técnico:</strong> {act.tecnico?.nombre} ({act.tecnico?.numero})
+                        </Text>
+                        <br />
+                        <Text type="secondary">
+                          <strong>Fecha:</strong> {new Date(act.fecha).toLocaleString('es-ES', {
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                        </Text>
+                      </div>
+                    </div>
+                  ),
+                }))}
+              />
+            ) : (
+              <Text type="secondary">No hay actualizaciones registradas</Text>
+            )}
           </div>
         )}
       </Modal>

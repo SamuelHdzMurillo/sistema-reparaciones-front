@@ -34,6 +34,17 @@ export const api = {
     });
     return response.json();
   },
+
+  getActualizaciones: async (id) => {
+    const response = await fetch(`${API_URL}/reparaciones/${id}/actualizaciones`, {
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+        Authorization: `Bearer ${getToken()}`,
+      },
+    });
+    return response.json();
+  },
 };
 
 export const getToken = () => localStorage.getItem("token");
