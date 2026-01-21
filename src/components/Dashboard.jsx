@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Input, Card, Table, Tag, Typography, Spin, Row, Col, Space, Select, Divider, Modal, Descriptions, Button, Timeline } from 'antd';
-import { SearchOutlined, ToolOutlined, InboxOutlined, CheckCircleOutlined, SendOutlined, EyeOutlined, ClockCircleOutlined } from '@ant-design/icons';
+import { SearchOutlined, ToolOutlined, InboxOutlined, CheckCircleOutlined, SendOutlined, EyeOutlined, ClockCircleOutlined, PrinterOutlined } from '@ant-design/icons';
 import { api } from '../services/api';
+import DocumentoEntrega from './DocumentoEntrega';
 
 const { Text, Title } = Typography;
 
@@ -51,6 +52,7 @@ function Dashboard() {
   const [loadingDetalle, setLoadingDetalle] = useState(false);
   const [actualizaciones, setActualizaciones] = useState([]);
   const [loadingActualizaciones, setLoadingActualizaciones] = useState(false);
+  const documentoRef = useRef(null);
 
   useEffect(() => {
     cargarReparaciones();
@@ -100,6 +102,58 @@ function Dashboard() {
       setLoadingDetalle(false);
       setLoadingActualizaciones(false);
     }
+  };
+
+  const imprimirDocumento = () => {
+    if (!documentoRef.current) return;
+    
+    const ventanaImpresion = window.open('', '_blank');
+    const contenido = documentoRef.current.innerHTML;
+    
+    ventanaImpresion.document.write(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Orden de Servicio - ${detalleReparacion?.id || ''}</title>
+          <meta charset="utf-8">
+          <style>
+            @page {
+              size: A4;
+              margin: 0;
+            }
+            @media print {
+              body { 
+                margin: 0;
+                padding: 0;
+              }
+              * {
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+              }
+            }
+            body {
+              font-family: Arial, sans-serif;
+              margin: 0;
+              padding: 0;
+              background: white;
+            }
+          </style>
+        </head>
+        <body>
+          ${contenido}
+        </body>
+      </html>
+    `);
+    
+    ventanaImpresion.document.close();
+    ventanaImpresion.focus();
+    
+    setTimeout(() => {
+      ventanaImpresion.print();
+      setTimeout(() => {
+        ventanaImpresion.close();
+      }, 100);
+    }, 500);
   };
 
   const tecnicos = [...new Set(reparaciones.map(r => r.tecnico?.name))].filter(Boolean);
@@ -314,9 +368,21 @@ function Dashboard() {
           <Spin style={{ display: 'block', margin: '40px auto' }} />
         ) : detalleReparacion && (
           <div>
-            <Tag color={estadoConfig[detalleReparacion.estado]?.color} style={{ marginBottom: 16 }}>
-              {estadoConfig[detalleReparacion.estado]?.label}
-            </Tag>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+              <Tag color={estadoConfig[detalleReparacion.estado]?.color}>
+                {estadoConfig[detalleReparacion.estado]?.label}
+              </Tag>
+              {detalleReparacion.estado === 'listo' && (
+                <Button
+                  type="primary"
+                  icon={<PrinterOutlined />}
+                  onClick={imprimirDocumento}
+                  style={{ background: '#2e7d32', borderColor: '#2e7d32' }}
+                >
+                  Imprimir Documento de Entrega
+                </Button>
+              )}
+            </div>
 
             <Descriptions title="Información del Bien" bordered size="small" column={2} style={{ marginBottom: 24 }}>
               <Descriptions.Item label="Tipo">{detalleReparacion.bien?.tipo_bien}</Descriptions.Item>
@@ -399,6 +465,18 @@ function Dashboard() {
           </div>
         )}
       </Modal>
+
+      {/* Documento oculto para impresión */}
+      <div style={{ display: 'none' }}>
+        <div ref={documentoRef}>
+          {detalleReparacion && (
+            <DocumentoEntrega 
+              reparacion={detalleReparacion} 
+              actualizaciones={actualizaciones}
+            />
+          )}
+        </div>
+      </div>
 
       <style>{`
         .ant-table-thead > tr > th {
