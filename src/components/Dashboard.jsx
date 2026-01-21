@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
-import { Input, Card, Table, Tag, Typography, Spin, Row, Col, Space, Select, Divider, Modal, Descriptions, Button, Timeline } from 'antd';
-import { SearchOutlined, ToolOutlined, InboxOutlined, CheckCircleOutlined, SendOutlined, EyeOutlined, ClockCircleOutlined, PrinterOutlined } from '@ant-design/icons';
+import { Input, Card, Table, Tag, Typography, Spin, Row, Col, Space, Select, Divider, Modal, Descriptions, Button, Timeline, Form, message, AutoComplete } from 'antd';
+import { SearchOutlined, ToolOutlined, InboxOutlined, CheckCircleOutlined, SendOutlined, EyeOutlined, ClockCircleOutlined, PrinterOutlined, PlusOutlined } from '@ant-design/icons';
 import { api } from '../services/api';
 import DocumentoEntrega from './DocumentoEntrega';
 
@@ -52,6 +52,23 @@ function Dashboard() {
   const [loadingDetalle, setLoadingDetalle] = useState(false);
   const [actualizaciones, setActualizaciones] = useState([]);
   const [loadingActualizaciones, setLoadingActualizaciones] = useState(false);
+  const [modalNuevaReparacion, setModalNuevaReparacion] = useState(false);
+  const [form] = Form.useForm();
+  const [guardando, setGuardando] = useState(false);
+  const [planteles, setPlanteles] = useState([]);
+  const [entidades, setEntidades] = useState([]);
+  const [cargandoPlanteles, setCargandoPlanteles] = useState(false);
+  const [cargandoEntidades, setCargandoEntidades] = useState(false);
+  const [modalNuevoPlantel, setModalNuevoPlantel] = useState(false);
+  const [modalNuevaEntidad, setModalNuevaEntidad] = useState(false);
+  const [formPlantel] = Form.useForm();
+  const [formEntidad] = Form.useForm();
+  const [guardandoPlantel, setGuardandoPlantel] = useState(false);
+  const [guardandoEntidad, setGuardandoEntidad] = useState(false);
+  const [bienes, setBienes] = useState([]);
+  const [cargandoBienes, setCargandoBienes] = useState(false);
+  const [clientes, setClientes] = useState([]);
+  const [cargandoClientes, setCargandoClientes] = useState(false);
   const documentoRef = useRef(null);
 
   useEffect(() => {
@@ -156,6 +173,183 @@ function Dashboard() {
     }, 500);
   };
 
+  const cargarPlanteles = async () => {
+    setCargandoPlanteles(true);
+    try {
+      const res = await api.getPlanteles();
+      if (res.exito) {
+        setPlanteles(res.datos || []);
+      }
+    } catch (error) {
+      console.error('Error al cargar planteles:', error);
+      message.error('Error al cargar planteles');
+    } finally {
+      setCargandoPlanteles(false);
+    }
+  };
+
+  const cargarEntidades = async () => {
+    setCargandoEntidades(true);
+    try {
+      const res = await api.getEntidades();
+      if (res.exito) {
+        setEntidades(res.datos || []);
+      }
+    } catch (error) {
+      console.error('Error al cargar entidades:', error);
+      message.error('Error al cargar entidades');
+    } finally {
+      setCargandoEntidades(false);
+    }
+  };
+
+  const cargarBienes = async () => {
+    setCargandoBienes(true);
+    try {
+      const res = await api.getBienes();
+      if (res.exito) {
+        setBienes(res.datos || []);
+      }
+    } catch (error) {
+      console.error('Error al cargar bienes:', error);
+      message.error('Error al cargar bienes');
+    } finally {
+      setCargandoBienes(false);
+    }
+  };
+
+  const cargarClientes = async () => {
+    setCargandoClientes(true);
+    try {
+      const res = await api.getClientes();
+      if (res.exito) {
+        setClientes(res.datos || []);
+      }
+    } catch (error) {
+      console.error('Error al cargar clientes:', error);
+      message.error('Error al cargar clientes');
+    } finally {
+      setCargandoClientes(false);
+    }
+  };
+
+  const abrirModalNuevaReparacion = () => {
+    setModalNuevaReparacion(true);
+    form.resetFields();
+    cargarPlanteles();
+    cargarEntidades();
+    cargarBienes();
+    cargarClientes();
+  };
+
+  const seleccionarBien = (numeroInventario) => {
+    const bien = bienes.find(b => b.numero_inventario === numeroInventario);
+    if (bien) {
+      form.setFieldsValue({
+        tipo_bien: bien.tipo_bien || '',
+        marca: bien.marca || '',
+        modelo: bien.modelo || '',
+        numero_serie: bien.numero_serie || '',
+        especificaciones: bien.especificaciones || '',
+        plantel_id: bien.plantel_id || undefined,
+        entidad_id: bien.entidad_id || undefined,
+      });
+    }
+  };
+
+  const seleccionarCliente = (nombreCompleto) => {
+    const cliente = clientes.find(c => c.nombre_completo === nombreCompleto);
+    if (cliente) {
+      form.setFieldsValue({
+        telefono_cliente: cliente.telefono || '',
+      });
+    }
+  };
+
+  const cerrarModalNuevaReparacion = () => {
+    setModalNuevaReparacion(false);
+    form.resetFields();
+  };
+
+  const guardarNuevaReparacion = async (valores) => {
+    setGuardando(true);
+    try {
+      const datos = {
+        nombre_cliente: valores.nombre_cliente,
+        telefono_cliente: valores.telefono_cliente || null,
+        numero_inventario: valores.numero_inventario,
+        tipo_bien: valores.tipo_bien,
+        marca: valores.marca,
+        modelo: valores.modelo || null,
+        numero_serie: valores.numero_serie || null,
+        especificaciones: valores.especificaciones || null,
+        plantel_id: valores.plantel_id,
+        entidad_id: valores.entidad_id,
+        falla_reportada: valores.falla_reportada,
+        accesorios_incluidos: valores.accesorios_incluidos || null,
+      };
+
+      const res = await api.crearReparacion(datos);
+      
+      if (res.exito) {
+        message.success('Reparación registrada exitosamente');
+        cerrarModalNuevaReparacion();
+        cargarReparaciones();
+      } else {
+        message.error(res.mensaje || 'Error al registrar la reparación');
+      }
+    } catch (error) {
+      console.error('Error al guardar reparación:', error);
+      message.error('Error de conexión con el servidor');
+    } finally {
+      setGuardando(false);
+    }
+  };
+
+  const guardarNuevoPlantel = async (valores) => {
+    setGuardandoPlantel(true);
+    try {
+      // Por ahora, solo agregamos localmente. Si hay endpoint POST, se puede usar aquí
+      const nuevoPlantel = {
+        id: planteles.length > 0 ? Math.max(...planteles.map(p => p.id)) + 1 : 1,
+        nombre: valores.nombre,
+        total_bienes: 0
+      };
+      setPlanteles([...planteles, nuevoPlantel]);
+      form.setFieldsValue({ plantel_id: nuevoPlantel.id });
+      setModalNuevoPlantel(false);
+      formPlantel.resetFields();
+      message.success('Plantel agregado correctamente');
+    } catch (error) {
+      console.error('Error al guardar plantel:', error);
+      message.error('Error al guardar plantel');
+    } finally {
+      setGuardandoPlantel(false);
+    }
+  };
+
+  const guardarNuevaEntidad = async (valores) => {
+    setGuardandoEntidad(true);
+    try {
+      // Por ahora, solo agregamos localmente. Si hay endpoint POST, se puede usar aquí
+      const nuevaEntidad = {
+        id: entidades.length > 0 ? Math.max(...entidades.map(e => e.id)) + 1 : 1,
+        nombre: valores.nombre,
+        total_bienes: 0
+      };
+      setEntidades([...entidades, nuevaEntidad]);
+      form.setFieldsValue({ entidad_id: nuevaEntidad.id });
+      setModalNuevaEntidad(false);
+      formEntidad.resetFields();
+      message.success('Entidad agregada correctamente');
+    } catch (error) {
+      console.error('Error al guardar entidad:', error);
+      message.error('Error al guardar entidad');
+    } finally {
+      setGuardandoEntidad(false);
+    }
+  };
+
   const tecnicos = [...new Set(reparaciones.map(r => r.tecnico?.name))].filter(Boolean);
 
   const datosFiltrados = reparaciones.filter(r => {
@@ -228,9 +422,20 @@ function Dashboard() {
   return (
     <div>
       {/* Título principal */}
-      <Title level={3} style={{ marginBottom: 24, color: '#2e7d32' }}>
-        Panel de Control
-      </Title>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+        <Title level={3} style={{ margin: 0, color: '#2e7d32' }}>
+          Panel de Control
+        </Title>
+        <Button
+          type="primary"
+          icon={<PlusOutlined />}
+          onClick={abrirModalNuevaReparacion}
+          size="large"
+          style={{ background: '#2e7d32', borderColor: '#2e7d32' }}
+        >
+          Agregar Reparación
+        </Button>
+      </div>
 
       {/* Resumen por estado */}
       <Card
@@ -464,6 +669,365 @@ function Dashboard() {
             )}
           </div>
         )}
+      </Modal>
+
+      {/* Modal para nueva reparación */}
+      <Modal
+        title="Nueva Reparación"
+        open={modalNuevaReparacion}
+        onCancel={cerrarModalNuevaReparacion}
+        footer={null}
+        width={800}
+      >
+        <Form
+          form={form}
+          layout="vertical"
+          onFinish={guardarNuevaReparacion}
+          autoComplete="off"
+        >
+          <Title level={5} style={{ marginBottom: 16, color: '#333' }}>
+            Información del Cliente
+          </Title>
+          <Row gutter={16}>
+            <Col xs={24} sm={12}>
+              <Form.Item
+                name="nombre_cliente"
+                label="Nombre Completo"
+                rules={[{ required: true, message: 'Seleccione o ingrese el nombre del cliente' }]}
+              >
+                <AutoComplete
+                  placeholder="Buscar o escribir nombre del cliente"
+                  loading={cargandoClientes}
+                  options={clientes.map(c => ({
+                    value: c.nombre_completo,
+                    label: `${c.nombre_completo}${c.telefono ? ` - ${c.telefono}` : ''}${c.total_reparaciones ? ` (${c.total_reparaciones} reparaciones)` : ''}`
+                  }))}
+                  filterOption={(inputValue, option) =>
+                    (option?.value ?? '').toLowerCase().includes(inputValue.toLowerCase())
+                  }
+                  onSelect={(value) => {
+                    seleccionarCliente(value);
+                  }}
+                  onChange={(value) => {
+                    if (!value) {
+                      // Limpiar teléfono si se borra el nombre
+                      form.setFieldsValue({
+                        telefono_cliente: '',
+                      });
+                    }
+                  }}
+                  allowClear
+                />
+              </Form.Item>
+            </Col>
+            <Col xs={24} sm={12}>
+              <Form.Item
+                name="telefono_cliente"
+                label="Teléfono"
+              >
+                <Input placeholder="Teléfono del cliente (opcional)" />
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Divider />
+
+          <Title level={5} style={{ marginBottom: 16, color: '#333' }}>
+            Información del Bien
+          </Title>
+          <Row gutter={16}>
+            <Col xs={24} sm={12}>
+              <Form.Item
+                name="numero_inventario"
+                label="Número de Inventario"
+                rules={[{ required: true, message: 'Seleccione o ingrese el número de inventario' }]}
+              >
+                <AutoComplete
+                  placeholder="Buscar o escribir número de inventario"
+                  loading={cargandoBienes}
+                  options={bienes.map(b => ({
+                    value: b.numero_inventario,
+                    label: `${b.numero_inventario} - ${b.tipo_bien} ${b.marca} ${b.modelo || ''}`.trim()
+                  }))}
+                  filterOption={(inputValue, option) =>
+                    (option?.value ?? '').toString().includes(inputValue) ||
+                    (option?.label ?? '').toLowerCase().includes(inputValue.toLowerCase())
+                  }
+                  onSelect={(value) => {
+                    seleccionarBien(value);
+                  }}
+                  onChange={(value) => {
+                    if (!value) {
+                      // Limpiar campos si se borra el valor
+                      form.setFieldsValue({
+                        tipo_bien: '',
+                        marca: '',
+                        modelo: '',
+                        numero_serie: '',
+                        especificaciones: '',
+                        plantel_id: undefined,
+                        entidad_id: undefined,
+                      });
+                    }
+                  }}
+                  allowClear
+                />
+              </Form.Item>
+            </Col>
+            <Col xs={24} sm={12}>
+              <Form.Item
+                name="tipo_bien"
+                label="Tipo de Bien"
+                rules={[{ required: true, message: 'Ingrese el tipo de bien' }]}
+              >
+                <Input placeholder="Ej: Laptop, Monitor, Impresora, etc." />
+              </Form.Item>
+            </Col>
+          </Row>
+          <Row gutter={16}>
+            <Col xs={24} sm={12}>
+              <Form.Item
+                name="marca"
+                label="Marca"
+                rules={[{ required: true, message: 'Ingrese la marca' }]}
+              >
+                <Input placeholder="Marca del equipo" />
+              </Form.Item>
+            </Col>
+            <Col xs={24} sm={12}>
+              <Form.Item
+                name="modelo"
+                label="Modelo"
+              >
+                <Input placeholder="Modelo del equipo (opcional)" />
+              </Form.Item>
+            </Col>
+          </Row>
+          <Row gutter={16}>
+            <Col xs={24} sm={12}>
+              <Form.Item
+                name="numero_serie"
+                label="Número de Serie"
+              >
+                <Input placeholder="Número de serie (opcional)" />
+              </Form.Item>
+            </Col>
+            <Col xs={24} sm={12}>
+              <Form.Item
+                name="plantel_id"
+                label="Plantel"
+                rules={[{ required: true, message: 'Seleccione un plantel' }]}
+              >
+                <Select
+                  placeholder="Seleccione un plantel"
+                  loading={cargandoPlanteles}
+                  notFoundContent={cargandoPlanteles ? <Spin size="small" /> : 'No hay planteles disponibles'}
+                  dropdownRender={(menu) => (
+                    <>
+                      {menu}
+                      <Divider style={{ margin: '8px 0' }} />
+                      <Button
+                        type="link"
+                        icon={<PlusOutlined />}
+                        onClick={() => setModalNuevoPlantel(true)}
+                        style={{ width: '100%' }}
+                      >
+                        Agregar nuevo plantel
+                      </Button>
+                    </>
+                  )}
+                  options={planteles.map(p => ({
+                    value: p.id,
+                    label: `${p.nombre} (ID: ${p.id})`
+                  }))}
+                />
+              </Form.Item>
+            </Col>
+          </Row>
+          <Row gutter={16}>
+            <Col xs={24} sm={12}>
+              <Form.Item
+                name="entidad_id"
+                label="Entidad"
+                rules={[{ required: true, message: 'Seleccione una entidad' }]}
+              >
+                <Select
+                  placeholder="Seleccione una entidad"
+                  loading={cargandoEntidades}
+                  notFoundContent={cargandoEntidades ? <Spin size="small" /> : 'No hay entidades disponibles'}
+                  dropdownRender={(menu) => (
+                    <>
+                      {menu}
+                      <Divider style={{ margin: '8px 0' }} />
+                      <Button
+                        type="link"
+                        icon={<PlusOutlined />}
+                        onClick={() => setModalNuevaEntidad(true)}
+                        style={{ width: '100%' }}
+                      >
+                        Agregar nueva entidad
+                      </Button>
+                    </>
+                  )}
+                  options={entidades.map(e => ({
+                    value: e.id,
+                    label: `${e.nombre} (ID: ${e.id})`
+                  }))}
+                />
+              </Form.Item>
+            </Col>
+            <Col xs={24} sm={12}>
+              <Form.Item
+                name="especificaciones"
+                label="Especificaciones"
+              >
+                <Input.TextArea 
+                  rows={3} 
+                  placeholder="Especificaciones técnicas (opcional)" 
+                />
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Divider />
+
+          <Title level={5} style={{ marginBottom: 16, color: '#333' }}>
+            Información de la Reparación
+          </Title>
+          <Row gutter={16}>
+            <Col xs={24}>
+              <Form.Item
+                name="falla_reportada"
+                label="Falla Reportada"
+                rules={[{ required: true, message: 'Describa la falla reportada' }]}
+              >
+                <Input.TextArea 
+                  rows={4} 
+                  placeholder="Describa la falla o problema reportado" 
+                />
+              </Form.Item>
+            </Col>
+          </Row>
+          <Row gutter={16}>
+            <Col xs={24}>
+              <Form.Item
+                name="accesorios_incluidos"
+                label="Accesorios Incluidos"
+              >
+                <Input.TextArea 
+                  rows={3} 
+                  placeholder="Liste los accesorios incluidos (opcional)" 
+                />
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Form.Item style={{ marginTop: 24, marginBottom: 0 }}>
+            <Space>
+              <Button 
+                type="primary" 
+                htmlType="submit" 
+                loading={guardando}
+                style={{ background: '#2e7d32', borderColor: '#2e7d32' }}
+              >
+                Guardar Reparación
+              </Button>
+              <Button onClick={cerrarModalNuevaReparacion}>
+                Cancelar
+              </Button>
+            </Space>
+          </Form.Item>
+        </Form>
+      </Modal>
+
+      {/* Modal para nuevo plantel */}
+      <Modal
+        title="Agregar Nuevo Plantel"
+        open={modalNuevoPlantel}
+        onCancel={() => {
+          setModalNuevoPlantel(false);
+          formPlantel.resetFields();
+        }}
+        footer={null}
+        width={500}
+      >
+        <Form
+          form={formPlantel}
+          layout="vertical"
+          onFinish={guardarNuevoPlantel}
+          autoComplete="off"
+        >
+          <Form.Item
+            name="nombre"
+            label="Nombre del Plantel"
+            rules={[{ required: true, message: 'Ingrese el nombre del plantel' }]}
+          >
+            <Input placeholder="Nombre del plantel" />
+          </Form.Item>
+          <Form.Item style={{ marginTop: 24, marginBottom: 0 }}>
+            <Space>
+              <Button 
+                type="primary" 
+                htmlType="submit" 
+                loading={guardandoPlantel}
+                style={{ background: '#2e7d32', borderColor: '#2e7d32' }}
+              >
+                Guardar Plantel
+              </Button>
+              <Button onClick={() => {
+                setModalNuevoPlantel(false);
+                formPlantel.resetFields();
+              }}>
+                Cancelar
+              </Button>
+            </Space>
+          </Form.Item>
+        </Form>
+      </Modal>
+
+      {/* Modal para nueva entidad */}
+      <Modal
+        title="Agregar Nueva Entidad"
+        open={modalNuevaEntidad}
+        onCancel={() => {
+          setModalNuevaEntidad(false);
+          formEntidad.resetFields();
+        }}
+        footer={null}
+        width={500}
+      >
+        <Form
+          form={formEntidad}
+          layout="vertical"
+          onFinish={guardarNuevaEntidad}
+          autoComplete="off"
+        >
+          <Form.Item
+            name="nombre"
+            label="Nombre de la Entidad"
+            rules={[{ required: true, message: 'Ingrese el nombre de la entidad' }]}
+          >
+            <Input placeholder="Nombre de la entidad" />
+          </Form.Item>
+          <Form.Item style={{ marginTop: 24, marginBottom: 0 }}>
+            <Space>
+              <Button 
+                type="primary" 
+                htmlType="submit" 
+                loading={guardandoEntidad}
+                style={{ background: '#2e7d32', borderColor: '#2e7d32' }}
+              >
+                Guardar Entidad
+              </Button>
+              <Button onClick={() => {
+                setModalNuevaEntidad(false);
+                formEntidad.resetFields();
+              }}>
+                Cancelar
+              </Button>
+            </Space>
+          </Form.Item>
+        </Form>
       </Modal>
 
       {/* Documento oculto para impresión */}

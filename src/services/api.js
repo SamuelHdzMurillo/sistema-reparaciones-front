@@ -45,6 +45,63 @@ export const api = {
     });
     return response.json();
   },
+
+  crearReparacion: async (datos) => {
+    const response = await fetch(`${API_URL}/reparaciones`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+        Authorization: `Bearer ${getToken()}`,
+      },
+      body: JSON.stringify(datos),
+    });
+    return response.json();
+  },
+
+  getPlanteles: async () => {
+    const response = await fetch(`${API_URL}/planteles`, {
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+        Authorization: `Bearer ${getToken()}`,
+      },
+    });
+    return response.json();
+  },
+
+  getEntidades: async () => {
+    const response = await fetch(`${API_URL}/entidades`, {
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+        Authorization: `Bearer ${getToken()}`,
+      },
+    });
+    return response.json();
+  },
+
+  getBienes: async () => {
+    const response = await fetch(`${API_URL}/bienes`, {
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+        Authorization: `Bearer ${getToken()}`,
+      },
+    });
+    return response.json();
+  },
+
+  getClientes: async () => {
+    const response = await fetch(`${API_URL}/clientes`, {
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+        Authorization: `Bearer ${getToken()}`,
+      },
+    });
+    return response.json();
+  },
 };
 
 export const getToken = () => localStorage.getItem("token");
