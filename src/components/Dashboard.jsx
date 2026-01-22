@@ -393,140 +393,319 @@ function Dashboard({ onVerDetalle }) {
   ];
 
   if (loading) {
-    return <Spin size="large" style={{ display: 'block', margin: '100px auto' }} />;
+    return (
+      <div style={{ 
+        display: 'flex', 
+        flexDirection: 'column',
+        alignItems: 'center', 
+        justifyContent: 'center', 
+        minHeight: '60vh',
+        gap: 16
+      }}>
+        <Spin size="large" />
+        <Text type="secondary" style={{ fontSize: 14 }}>Cargando reparaciones...</Text>
+      </div>
+    );
   }
 
   return (
-    <div>
-      {/* Título principal */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-        <Title level={3} style={{ margin: 0, color: '#2e7d32' }}>
-          Panel de Control
-        </Title>
-        <Button
-          type="primary"
-          icon={<PlusOutlined />}
-          onClick={abrirModalNuevaReparacion}
-          size="large"
-          style={{ background: '#2e7d32', borderColor: '#2e7d32' }}
-        >
-          Agregar Reparación
-        </Button>
-      </div>
+    <div style={{ padding: '0 4px' }}>
+      {/* Header principal con más profundidad */}
+      <Card
+        bordered={false}
+        style={{
+          marginBottom: 32,
+          borderRadius: 16,
+          background: '#ffffff',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.05), 0 4px 12px rgba(0,0,0,0.08)',
+          border: '1px solid rgba(0,0,0,0.04)',
+        }}
+        bodyStyle={{ padding: '24px 32px' }}
+      >
+        <div style={{ 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: 16
+        }}>
+          <div>
+            <Title level={2} style={{ 
+              margin: 0, 
+              color: '#1a1a1a',
+              fontWeight: 600,
+              fontSize: 28,
+              letterSpacing: '-0.02em'
+            }}>
+              Panel de Control
+            </Title>
+            <Text type="secondary" style={{ 
+              fontSize: 14,
+              marginTop: 4,
+              display: 'block',
+              color: '#8c8c8c'
+            }}>
+              Gestión de reparaciones y seguimiento
+            </Text>
+          </div>
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={abrirModalNuevaReparacion}
+            size="large"
+            style={{ 
+              background: '#2e7d32', 
+              borderColor: '#2e7d32',
+              height: 44,
+              paddingLeft: 24,
+              paddingRight: 24,
+              borderRadius: 8,
+              fontWeight: 500,
+              boxShadow: '0 2px 4px rgba(46, 125, 50, 0.2)',
+              transition: 'all 0.2s ease'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.boxShadow = '0 4px 8px rgba(46, 125, 50, 0.3)';
+              e.currentTarget.style.transform = 'translateY(-1px)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.boxShadow = '0 2px 4px rgba(46, 125, 50, 0.2)';
+              e.currentTarget.style.transform = 'translateY(0)';
+            }}
+          >
+            Agregar Reparación
+          </Button>
+        </div>
+      </Card>
 
-      {/* Tabla con filtros integrados */}
+      {/* Tabla con filtros integrados - Mejorado */}
       <Card 
         bordered={false}
         style={{ 
-          borderRadius: 12,
-          boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+          borderRadius: 16,
+          background: '#ffffff',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.05), 0 4px 12px rgba(0,0,0,0.08)',
+          border: '1px solid rgba(0,0,0,0.04)',
+          overflow: 'hidden'
         }}
+        bodyStyle={{ padding: 0 }}
       >
-        <Title level={5} style={{ marginBottom: 4, color: '#333' }}>
-          Listado Completo de Reparaciones
-        </Title>
-        <Text type="secondary" style={{ display: 'block', marginBottom: 16 }}>
-          {datosFiltrados.length} de {reparaciones.length} registros
-        </Text>
+        {/* Header de la tabla */}
+        <div style={{
+          padding: '24px 32px',
+          borderBottom: '1px solid rgba(0,0,0,0.06)',
+          background: '#fafafa'
+        }}>
+          <div style={{ 
+            display: 'flex', 
+            justifyContent: 'space-between', 
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: 12,
+            marginBottom: 20
+          }}>
+            <div>
+              <Title level={4} style={{ 
+                margin: 0, 
+                color: '#1a1a1a',
+                fontWeight: 600,
+                fontSize: 18
+              }}>
+                Reparaciones
+              </Title>
+              <Text type="secondary" style={{ 
+                fontSize: 13,
+                marginTop: 4,
+                display: 'block',
+                color: '#8c8c8c'
+              }}>
+                {datosFiltrados.length} de {reparaciones.length} registros
+              </Text>
+            </div>
+          </div>
 
-        <Row gutter={[12, 12]} style={{ marginBottom: 20 }}>
-          <Col xs={24} sm={12} md={6}>
-            <Input
-              placeholder="Buscar equipo, cliente, falla..."
-              prefix={<SearchOutlined style={{ color: '#999' }} />}
-              value={busqueda}
-              onChange={(e) => setBusqueda(e.target.value)}
-              allowClear
-            />
-          </Col>
-          <Col xs={12} sm={6} md={4}>
-            <Select
-              placeholder="Estado"
-              value={filtroEstado}
-              onChange={setFiltroEstado}
-              style={{ width: '100%' }}
-              allowClear
-              options={Object.entries(estadoConfig).map(([k, v]) => ({ value: k, label: v.label }))}
-            />
-          </Col>
-          <Col xs={12} sm={6} md={4}>
-            <Select
-              placeholder="Técnico"
-              value={filtroTecnico}
-              onChange={setFiltroTecnico}
-              style={{ width: '100%' }}
-              allowClear
-              options={tecnicos.map(t => ({ value: t, label: t }))}
-            />
-          </Col>
-          <Col xs={12} sm={6} md={5}>
-            <AutoComplete
-              placeholder="Buscar plantel..."
-              value={filtroPlantel ? planteles.find(p => p.id === filtroPlantel)?.nombre : ''}
-              onChange={(value) => {
-                if (!value) {
-                  setFiltroPlantel(null);
-                  return;
+          {/* Filtros mejorados */}
+          <div 
+            className="filters-grid"
+            style={{ 
+              display: 'grid', 
+              gridTemplateColumns: 'repeat(5, 1fr)', 
+              gap: '16px',
+              marginBottom: 0
+            }}
+          >
+            <div>
+              <Text strong style={{ 
+                display: 'block', 
+                marginBottom: 8,
+                fontSize: 13,
+                color: '#595959'
+              }}>
+                Búsqueda general
+              </Text>
+              <Input
+                placeholder="Equipo, cliente, falla..."
+                prefix={<SearchOutlined style={{ color: '#bfbfbf' }} />}
+                value={busqueda}
+                onChange={(e) => setBusqueda(e.target.value)}
+                allowClear
+                style={{
+                  borderRadius: 8,
+                  border: '1px solid #d9d9d9',
+                  transition: 'all 0.2s ease',
+                  width: '100%'
+                }}
+                onFocus={(e) => {
+                  e.target.style.borderColor = '#2e7d32';
+                  e.target.style.boxShadow = '0 0 0 2px rgba(46, 125, 50, 0.1)';
+                }}
+                onBlur={(e) => {
+                  e.target.style.borderColor = '#d9d9d9';
+                  e.target.style.boxShadow = 'none';
+                }}
+              />
+            </div>
+            <div>
+              <Text strong style={{ 
+                display: 'block', 
+                marginBottom: 8,
+                fontSize: 13,
+                color: '#595959'
+              }}>
+                Estado
+              </Text>
+              <Select
+                placeholder="Todos"
+                value={filtroEstado}
+                onChange={setFiltroEstado}
+                style={{ width: '100%', borderRadius: 8 }}
+                allowClear
+                options={Object.entries(estadoConfig).map(([k, v]) => ({ value: k, label: v.label }))}
+              />
+            </div>
+            <div>
+              <Text strong style={{ 
+                display: 'block', 
+                marginBottom: 8,
+                fontSize: 13,
+                color: '#595959'
+              }}>
+                Técnico
+              </Text>
+              <Select
+                placeholder="Todos"
+                value={filtroTecnico}
+                onChange={setFiltroTecnico}
+                style={{ width: '100%', borderRadius: 8 }}
+                allowClear
+                options={tecnicos.map(t => ({ value: t, label: t }))}
+              />
+            </div>
+            <div>
+              <Text strong style={{ 
+                display: 'block', 
+                marginBottom: 8,
+                fontSize: 13,
+                color: '#595959'
+              }}>
+                Plantel
+              </Text>
+              <AutoComplete
+                placeholder="Buscar plantel..."
+                value={filtroPlantel ? planteles.find(p => p.id === filtroPlantel)?.nombre : ''}
+                onChange={(value) => {
+                  if (!value) {
+                    setFiltroPlantel(null);
+                    return;
+                  }
+                  const plantel = planteles.find(p => p.nombre === value);
+                  setFiltroPlantel(plantel ? plantel.id : null);
+                }}
+                onSelect={(value) => {
+                  const plantel = planteles.find(p => p.nombre === value);
+                  setFiltroPlantel(plantel ? plantel.id : null);
+                }}
+                options={planteles.map(p => ({
+                  value: p.nombre,
+                  label: `${p.nombre} (ID: ${p.id})`
+                }))}
+                filterOption={(inputValue, option) =>
+                  (option?.value ?? '').toLowerCase().includes(inputValue.toLowerCase())
                 }
-                const plantel = planteles.find(p => p.nombre === value);
-                setFiltroPlantel(plantel ? plantel.id : null);
-              }}
-              onSelect={(value) => {
-                const plantel = planteles.find(p => p.nombre === value);
-                setFiltroPlantel(plantel ? plantel.id : null);
-              }}
-              options={planteles.map(p => ({
-                value: p.nombre,
-                label: `${p.nombre} (ID: ${p.id})`
-              }))}
-              filterOption={(inputValue, option) =>
-                (option?.value ?? '').toLowerCase().includes(inputValue.toLowerCase())
-              }
-              allowClear
-              onClear={() => setFiltroPlantel(null)}
-              style={{ width: '100%' }}
-            />
-          </Col>
-          <Col xs={12} sm={6} md={5}>
-            <AutoComplete
-              placeholder="Buscar cliente..."
-              value={filtroCliente || ''}
-              onChange={(value) => setFiltroCliente(value || null)}
-              onSelect={(value) => setFiltroCliente(value)}
-              options={[...new Set(reparaciones.map(r => r.cliente?.nombre_completo))].filter(Boolean).map(nombre => ({
-                value: nombre,
-                label: nombre
-              }))}
-              filterOption={(inputValue, option) =>
-                (option?.value ?? '').toLowerCase().includes(inputValue.toLowerCase())
-              }
-              allowClear
-              onClear={() => setFiltroCliente(null)}
-              style={{ width: '100%' }}
-            />
-          </Col>
-        </Row>
+                allowClear
+                onClear={() => setFiltroPlantel(null)}
+                style={{ width: '100%', borderRadius: 8 }}
+              />
+            </div>
+            <div>
+              <Text strong style={{ 
+                display: 'block', 
+                marginBottom: 8,
+                fontSize: 13,
+                color: '#595959'
+              }}>
+                Cliente
+              </Text>
+              <AutoComplete
+                placeholder="Buscar cliente..."
+                value={filtroCliente || ''}
+                onChange={(value) => setFiltroCliente(value || null)}
+                onSelect={(value) => setFiltroCliente(value)}
+                options={[...new Set(reparaciones.map(r => r.cliente?.nombre_completo))].filter(Boolean).map(nombre => ({
+                  value: nombre,
+                  label: nombre
+                }))}
+                filterOption={(inputValue, option) =>
+                  (option?.value ?? '').toLowerCase().includes(inputValue.toLowerCase())
+                }
+                allowClear
+                onClear={() => setFiltroCliente(null)}
+                style={{ width: '100%', borderRadius: 8 }}
+              />
+            </div>
+          </div>
+        </div>
 
-        <Table
-          dataSource={datosFiltrados}
-          columns={columnas}
-          rowKey="id"
-          size="middle"
-          pagination={{ 
-            pageSize: 10, 
-            showSizeChanger: true,
-            showTotal: (total, range) => `${range[0]}-${range[1]} de ${total}`,
-          }}
-        />
+        {/* Tabla mejorada */}
+        <div style={{ padding: '0 32px 24px' }}>
+          <Table
+            dataSource={datosFiltrados}
+            columns={columnas}
+            rowKey="id"
+            size="middle"
+            pagination={{ 
+              pageSize: 10, 
+              showSizeChanger: true,
+              showTotal: (total, range) => `${range[0]}-${range[1]} de ${total}`,
+              style: { marginTop: 24 }
+            }}
+            style={{
+              background: '#ffffff'
+            }}
+          />
+        </div>
       </Card>
 
       {/* Modal para nueva reparación */}
       <Modal
-        title="Nueva Reparación"
+        title={
+          <div style={{ padding: '8px 0' }}>
+            <Title level={4} style={{ margin: 0, color: '#1a1a1a', fontWeight: 600 }}>
+              Nueva Reparación
+            </Title>
+            <Text type="secondary" style={{ fontSize: 13, marginTop: 4, display: 'block' }}>
+              Complete la información para registrar una nueva reparación
+            </Text>
+          </div>
+        }
         open={modalNuevaReparacion}
         onCancel={cerrarModalNuevaReparacion}
         footer={null}
         width={800}
+        style={{ top: 40 }}
+        styles={{
+          body: { padding: '24px' }
+        }}
       >
         <Form
           form={form}
@@ -534,9 +713,18 @@ function Dashboard({ onVerDetalle }) {
           onFinish={guardarNuevaReparacion}
           autoComplete="off"
         >
-          <Title level={5} style={{ marginBottom: 16, color: '#333' }}>
-            Información del Cliente
-          </Title>
+          <div style={{ 
+            marginBottom: 24,
+            paddingBottom: 16,
+            borderBottom: '1px solid #f0f0f0'
+          }}>
+            <Title level={5} style={{ margin: 0, color: '#1a1a1a', fontWeight: 600 }}>
+              Información del Cliente
+            </Title>
+            <Text type="secondary" style={{ fontSize: 13, marginTop: 4, display: 'block' }}>
+              Datos del cliente que solicita la reparación
+            </Text>
+          </div>
           <Row gutter={16}>
             <Col xs={24} sm={12}>
               <Form.Item
@@ -579,11 +767,19 @@ function Dashboard({ onVerDetalle }) {
             </Col>
           </Row>
 
-          <Divider />
-
-          <Title level={5} style={{ marginBottom: 16, color: '#333' }}>
-            Información del Bien
-          </Title>
+          <div style={{ 
+            marginTop: 32,
+            marginBottom: 24,
+            paddingBottom: 16,
+            borderBottom: '1px solid #f0f0f0'
+          }}>
+            <Title level={5} style={{ margin: 0, color: '#1a1a1a', fontWeight: 600 }}>
+              Información del Bien
+            </Title>
+            <Text type="secondary" style={{ fontSize: 13, marginTop: 4, display: 'block' }}>
+              Detalles del equipo a reparar
+            </Text>
+          </div>
           <Row gutter={16}>
             <Col xs={24} sm={12}>
               <Form.Item
@@ -738,11 +934,19 @@ function Dashboard({ onVerDetalle }) {
             </Col>
           </Row>
 
-          <Divider />
-
-          <Title level={5} style={{ marginBottom: 16, color: '#333' }}>
-            Información de la Reparación
-          </Title>
+          <div style={{ 
+            marginTop: 32,
+            marginBottom: 24,
+            paddingBottom: 16,
+            borderBottom: '1px solid #f0f0f0'
+          }}>
+            <Title level={5} style={{ margin: 0, color: '#1a1a1a', fontWeight: 600 }}>
+              Información de la Reparación
+            </Title>
+            <Text type="secondary" style={{ fontSize: 13, marginTop: 4, display: 'block' }}>
+              Descripción del problema y accesorios
+            </Text>
+          </div>
           <Row gutter={16}>
             <Col xs={24}>
               <Form.Item
@@ -771,17 +975,36 @@ function Dashboard({ onVerDetalle }) {
             </Col>
           </Row>
 
-          <Form.Item style={{ marginTop: 24, marginBottom: 0 }}>
+          <Form.Item style={{ marginTop: 32, marginBottom: 0 }}>
             <Space>
               <Button 
                 type="primary" 
                 htmlType="submit" 
                 loading={guardando}
-                style={{ background: '#2e7d32', borderColor: '#2e7d32' }}
+                size="large"
+                style={{ 
+                  background: '#2e7d32', 
+                  borderColor: '#2e7d32',
+                  borderRadius: 8,
+                  paddingLeft: 24,
+                  paddingRight: 24,
+                  height: 44,
+                  fontWeight: 500,
+                  boxShadow: '0 2px 4px rgba(46, 125, 50, 0.2)'
+                }}
               >
                 Guardar Reparación
               </Button>
-              <Button onClick={cerrarModalNuevaReparacion}>
+              <Button 
+                onClick={cerrarModalNuevaReparacion}
+                size="large"
+                style={{
+                  borderRadius: 8,
+                  paddingLeft: 24,
+                  paddingRight: 24,
+                  height: 44
+                }}
+              >
                 Cancelar
               </Button>
             </Space>
@@ -881,11 +1104,24 @@ function Dashboard({ onVerDetalle }) {
 
       {/* Modal para agregar actualización */}
       <Modal
-        title={`Agregar Actualización - Reparación #${reparacionSeleccionada?.id || ''}`}
+        title={
+          <div style={{ padding: '8px 0' }}>
+            <Title level={4} style={{ margin: 0, color: '#1a1a1a', fontWeight: 600 }}>
+              Agregar Actualización
+            </Title>
+            <Text type="secondary" style={{ fontSize: 13, marginTop: 4, display: 'block' }}>
+              Reparación #{reparacionSeleccionada?.id || ''}
+            </Text>
+          </div>
+        }
         open={modalActualizacion}
         onCancel={cerrarModalActualizacion}
         footer={null}
         width={600}
+        style={{ top: 40 }}
+        styles={{
+          body: { padding: '24px' }
+        }}
       >
         <Form
           form={formActualizacion}
@@ -916,17 +1152,36 @@ function Dashboard({ onVerDetalle }) {
               }))}
             />
           </Form.Item>
-          <Form.Item style={{ marginTop: 24, marginBottom: 0 }}>
+          <Form.Item style={{ marginTop: 32, marginBottom: 0 }}>
             <Space>
               <Button 
                 type="primary" 
                 htmlType="submit" 
                 loading={guardandoActualizacion}
-                style={{ background: '#2e7d32', borderColor: '#2e7d32' }}
+                size="large"
+                style={{ 
+                  background: '#2e7d32', 
+                  borderColor: '#2e7d32',
+                  borderRadius: 8,
+                  paddingLeft: 24,
+                  paddingRight: 24,
+                  height: 40,
+                  fontWeight: 500,
+                  boxShadow: '0 2px 4px rgba(46, 125, 50, 0.2)'
+                }}
               >
                 Guardar Actualización
               </Button>
-              <Button onClick={cerrarModalActualizacion}>
+              <Button 
+                onClick={cerrarModalActualizacion}
+                size="large"
+                style={{
+                  borderRadius: 8,
+                  paddingLeft: 24,
+                  paddingRight: 24,
+                  height: 40
+                }}
+              >
                 Cancelar
               </Button>
             </Space>
@@ -938,10 +1193,81 @@ function Dashboard({ onVerDetalle }) {
         .ant-table-thead > tr > th {
           background: #fafafa !important;
           font-weight: 600;
-          color: #333;
+          color: #1a1a1a;
+          border-bottom: 2px solid #e8e8e8 !important;
+          padding: 16px !important;
+          font-size: 13px;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+        }
+        .ant-table-tbody > tr {
+          transition: all 0.2s ease;
         }
         .ant-table-tbody > tr:hover > td {
-          background: #e8f5e9 !important;
+          background: #f5f9f6 !important;
+          cursor: pointer;
+        }
+        .ant-table-tbody > tr > td {
+          padding: 16px !important;
+          border-bottom: 1px solid #f0f0f0 !important;
+        }
+        .ant-table-pagination {
+          margin-top: 24px !important;
+        }
+        .ant-card {
+          transition: all 0.3s ease;
+        }
+        .ant-input:focus, .ant-input-focused {
+          border-color: #2e7d32 !important;
+          box-shadow: 0 0 0 2px rgba(46, 125, 50, 0.1) !important;
+        }
+        .ant-select:not(.ant-select-disabled):hover .ant-select-selector {
+          border-color: #2e7d32 !important;
+        }
+        .ant-select-focused:not(.ant-select-disabled).ant-select:not(.ant-select-customize-input) .ant-select-selector {
+          border-color: #2e7d32 !important;
+          box-shadow: 0 0 0 2px rgba(46, 125, 50, 0.1) !important;
+        }
+        .ant-btn-link {
+          padding: 4px 8px;
+          height: auto;
+        }
+        .ant-btn-link:hover {
+          background: rgba(46, 125, 50, 0.08);
+          border-radius: 4px;
+        }
+        .ant-modal-header {
+          border-bottom: 1px solid #f0f0f0;
+          padding: 20px 24px;
+        }
+        .ant-modal-title {
+          font-weight: 600;
+        }
+        .ant-form-item-label > label {
+          font-weight: 500;
+          color: #595959;
+        }
+        .ant-input, .ant-select-selector, .ant-input-affix-wrapper {
+          border-radius: 8px !important;
+          transition: all 0.2s ease;
+        }
+        .ant-tag {
+          border-radius: 4px;
+          font-weight: 500;
+          padding: 2px 10px;
+        }
+        .ant-divider {
+          margin: 24px 0;
+        }
+        @media (max-width: 768px) {
+          .filters-grid {
+            grid-template-columns: 1fr !important;
+          }
+        }
+        @media (min-width: 769px) and (max-width: 992px) {
+          .filters-grid {
+            grid-template-columns: repeat(2, 1fr) !important;
+          }
         }
       `}</style>
     </div>
