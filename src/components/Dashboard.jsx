@@ -46,6 +46,8 @@ function Dashboard({ onVerDetalle }) {
   const [busqueda, setBusqueda] = useState('');
   const [filtroEstado, setFiltroEstado] = useState(null);
   const [filtroTecnico, setFiltroTecnico] = useState(null);
+  const [filtroPlantel, setFiltroPlantel] = useState(null);
+  const [filtroCliente, setFiltroCliente] = useState(null);
   const [modalNuevaReparacion, setModalNuevaReparacion] = useState(false);
   const [form] = Form.useForm();
   const [guardando, setGuardando] = useState(false);
@@ -70,6 +72,8 @@ function Dashboard({ onVerDetalle }) {
 
   useEffect(() => {
     cargarReparaciones();
+    cargarPlanteles();
+    cargarClientes();
   }, []);
 
   const cargarReparaciones = async () => {
@@ -84,14 +88,6 @@ function Dashboard({ onVerDetalle }) {
       setLoading(false);
     }
   };
-
-  const obtenerMasReciente = (estado) => {
-    const items = reparaciones.filter(r => r.estado === estado);
-    if (items.length === 0) return null;
-    return items.sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at))[0];
-  };
-
-  const contarPorEstado = (estado) => reparaciones.filter(r => r.estado === estado).length;
 
   const verDetalle = (id) => {
     if (onVerDetalle) {
@@ -327,7 +323,9 @@ function Dashboard({ onVerDetalle }) {
       r.falla_reportada?.toLowerCase().includes(busqueda.toLowerCase());
     const matchEstado = !filtroEstado || r.estado === filtroEstado;
     const matchTecnico = !filtroTecnico || r.tecnico?.name === filtroTecnico;
-    return matchBusqueda && matchEstado && matchTecnico;
+    const matchPlantel = !filtroPlantel || r.bien?.plantel_id === filtroPlantel;
+    const matchCliente = !filtroCliente || r.cliente?.nombre_completo === filtroCliente;
+    return matchBusqueda && matchEstado && matchTecnico && matchPlantel && matchCliente;
   });
 
   const columnas = [
@@ -416,71 +414,6 @@ function Dashboard({ onVerDetalle }) {
         </Button>
       </div>
 
-      {/* Resumen por estado */}
-      <Card
-        bordered={false}
-        style={{
-          marginBottom: 32,
-          borderRadius: 12,
-          background: '#f8f9fa',
-          boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
-        }}
-      >
-        <Title level={5} style={{ marginBottom: 16, color: '#555' }}>
-          Últimas Reparaciones por Estado
-        </Title>
-        <Row gutter={[16, 16]}>
-        {Object.entries(estadoConfig).map(([estado, config]) => {
-          const item = obtenerMasReciente(estado);
-          const count = contarPorEstado(estado);
-          return (
-            <Col xs={24} sm={12} lg={6} key={estado}>
-              <Card 
-                bordered={false}
-                style={{ 
-                  height: 140,
-                  borderRadius: 10,
-                  background: config.bg,
-                  borderLeft: `4px solid ${config.border}`,
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-                }}
-                bodyStyle={{ padding: 12 }}
-              >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                  <Text style={{ color: config.text, fontSize: 14, fontWeight: 600 }}>
-                    {config.icon} {config.label}
-                  </Text>
-                  <div style={{ 
-                    background: config.border, 
-                    borderRadius: 6, 
-                    padding: '2px 10px',
-                  }}>
-                    <Text style={{ color: '#fff', fontWeight: 700, fontSize: 16 }}>{count}</Text>
-                  </div>
-                </div>
-                <Divider style={{ margin: '8px 0', borderColor: config.border, opacity: 0.3 }} />
-                {item ? (
-                  <div>
-                    <Text strong style={{ color: '#333', fontSize: 13, display: 'block' }}>
-                      {item.bien?.tipo_bien} - {item.bien?.marca}
-                    </Text>
-                    <Text style={{ color: '#666', fontSize: 12, display: 'block', marginTop: 4 }}>
-                      {item.cliente?.nombre_completo}
-                    </Text>
-                    <Text type="secondary" style={{ fontSize: 11, display: 'block', marginTop: 4 }}>
-                      Recibido: {new Date(item.created_at).toLocaleDateString()}
-                    </Text>
-                  </div>
-                ) : (
-                  <Text type="secondary">Sin reparaciones recientes</Text>
-                )}
-              </Card>
-            </Col>
-          );
-        })}
-        </Row>
-      </Card>
-
       {/* Tabla con filtros integrados */}
       <Card 
         bordered={false}
@@ -497,7 +430,7 @@ function Dashboard({ onVerDetalle }) {
         </Text>
 
         <Row gutter={[12, 12]} style={{ marginBottom: 20 }}>
-          <Col xs={24} sm={10} md={8}>
+          <Col xs={24} sm={12} md={6}>
             <Input
               placeholder="Buscar equipo, cliente, falla..."
               prefix={<SearchOutlined style={{ color: '#999' }} />}
@@ -506,7 +439,7 @@ function Dashboard({ onVerDetalle }) {
               allowClear
             />
           </Col>
-          <Col xs={12} sm={7} md={5}>
+          <Col xs={12} sm={6} md={4}>
             <Select
               placeholder="Estado"
               value={filtroEstado}
@@ -516,7 +449,7 @@ function Dashboard({ onVerDetalle }) {
               options={Object.entries(estadoConfig).map(([k, v]) => ({ value: k, label: v.label }))}
             />
           </Col>
-          <Col xs={12} sm={7} md={5}>
+          <Col xs={12} sm={6} md={4}>
             <Select
               placeholder="Técnico"
               value={filtroTecnico}
@@ -524,6 +457,52 @@ function Dashboard({ onVerDetalle }) {
               style={{ width: '100%' }}
               allowClear
               options={tecnicos.map(t => ({ value: t, label: t }))}
+            />
+          </Col>
+          <Col xs={12} sm={6} md={5}>
+            <AutoComplete
+              placeholder="Buscar plantel..."
+              value={filtroPlantel ? planteles.find(p => p.id === filtroPlantel)?.nombre : ''}
+              onChange={(value) => {
+                if (!value) {
+                  setFiltroPlantel(null);
+                  return;
+                }
+                const plantel = planteles.find(p => p.nombre === value);
+                setFiltroPlantel(plantel ? plantel.id : null);
+              }}
+              onSelect={(value) => {
+                const plantel = planteles.find(p => p.nombre === value);
+                setFiltroPlantel(plantel ? plantel.id : null);
+              }}
+              options={planteles.map(p => ({
+                value: p.nombre,
+                label: `${p.nombre} (ID: ${p.id})`
+              }))}
+              filterOption={(inputValue, option) =>
+                (option?.value ?? '').toLowerCase().includes(inputValue.toLowerCase())
+              }
+              allowClear
+              onClear={() => setFiltroPlantel(null)}
+              style={{ width: '100%' }}
+            />
+          </Col>
+          <Col xs={12} sm={6} md={5}>
+            <AutoComplete
+              placeholder="Buscar cliente..."
+              value={filtroCliente || ''}
+              onChange={(value) => setFiltroCliente(value || null)}
+              onSelect={(value) => setFiltroCliente(value)}
+              options={[...new Set(reparaciones.map(r => r.cliente?.nombre_completo))].filter(Boolean).map(nombre => ({
+                value: nombre,
+                label: nombre
+              }))}
+              filterOption={(inputValue, option) =>
+                (option?.value ?? '').toLowerCase().includes(inputValue.toLowerCase())
+              }
+              allowClear
+              onClear={() => setFiltroCliente(null)}
+              style={{ width: '100%' }}
             />
           </Col>
         </Row>
