@@ -316,16 +316,93 @@ function Dashboard({ onVerDetalle }) {
   const tecnicos = [...new Set(reparaciones.map(r => r.tecnico?.name))].filter(Boolean);
 
   const datosFiltrados = reparaciones.filter(r => {
-    const matchBusqueda = !busqueda || 
-      r.bien?.tipo_bien?.toLowerCase().includes(busqueda.toLowerCase()) ||
-      r.bien?.marca?.toLowerCase().includes(busqueda.toLowerCase()) ||
-      r.cliente?.nombre_completo?.toLowerCase().includes(busqueda.toLowerCase()) ||
-      r.falla_reportada?.toLowerCase().includes(busqueda.toLowerCase());
-    const matchEstado = !filtroEstado || r.estado === filtroEstado;
-    const matchTecnico = !filtroTecnico || r.tecnico?.name === filtroTecnico;
-    const matchPlantel = !filtroPlantel || r.bien?.plantel_id === filtroPlantel;
-    const matchCliente = !filtroCliente || r.cliente?.nombre_completo === filtroCliente;
-    return matchBusqueda && matchEstado && matchTecnico && matchPlantel && matchCliente;
+    try {
+      // Búsqueda general en todas las columnas
+      const matchBusqueda = !busqueda || (() => {
+        const busquedaLower = busqueda.toLowerCase().trim();
+        if (!busquedaLower) return true;
+        
+        // Función helper para buscar de forma segura
+        const safeSearch = (value) => {
+          if (value === null || value === undefined) return false;
+          try {
+            const str = typeof value === 'string' ? value : String(value);
+            return str.toLowerCase().includes(busquedaLower);
+          } catch {
+            return false;
+          }
+        };
+        
+        // ID de la reparación
+        const idMatch = safeSearch(r.id);
+        
+        // Información del bien (equipo)
+        const tipoBienMatch = safeSearch(r.bien?.tipo_bien);
+        const marcaMatch = safeSearch(r.bien?.marca);
+        const modeloMatch = safeSearch(r.bien?.modelo);
+        const numeroInventarioMatch = safeSearch(r.bien?.numero_inventario);
+        const numeroSerieMatch = safeSearch(r.bien?.numero_serie);
+        
+        // Información del cliente
+        const clienteMatch = safeSearch(r.cliente?.nombre_completo);
+        const telefonoClienteMatch = safeSearch(r.cliente?.telefono);
+        
+        // Información de la reparación
+        const fallaMatch = safeSearch(r.falla_reportada);
+        const accesoriosMatch = safeSearch(r.accesorios_incluidos);
+        
+        // Información del técnico
+        const tecnicoMatch = safeSearch(r.tecnico?.name);
+        const tecnicoNumeroMatch = safeSearch(r.tecnico?.numero);
+        const tecnicoEmailMatch = safeSearch(r.tecnico?.email);
+        
+        // Estado (buscar tanto el valor como la etiqueta)
+        const estadoValueMatch = safeSearch(r.estado);
+        const estadoLabelMatch = r.estado && estadoConfig[r.estado]?.label 
+          ? safeSearch(estadoConfig[r.estado].label) 
+          : false;
+        
+        // Fecha (buscar en formato de fecha)
+        let fechaMatch = false;
+        let fechaCreatedMatch = false;
+        try {
+          if (r.updated_at) {
+            const fecha = new Date(r.updated_at);
+            if (!isNaN(fecha.getTime())) {
+              fechaMatch = fecha.toLocaleDateString('es-ES').toLowerCase().includes(busquedaLower);
+            }
+          }
+          if (r.created_at) {
+            const fecha = new Date(r.created_at);
+            if (!isNaN(fecha.getTime())) {
+              fechaCreatedMatch = fecha.toLocaleDateString('es-ES').toLowerCase().includes(busquedaLower);
+            }
+          }
+        } catch {
+          // Ignorar errores de fecha
+        }
+        
+        // Plantel y entidad
+        const plantelMatch = safeSearch(r.bien?.plantel);
+        const entidadMatch = safeSearch(r.bien?.entidad);
+        
+        return idMatch || tipoBienMatch || marcaMatch || modeloMatch || numeroInventarioMatch || 
+               numeroSerieMatch || clienteMatch || telefonoClienteMatch || fallaMatch || 
+               accesoriosMatch || tecnicoMatch || tecnicoNumeroMatch || tecnicoEmailMatch || 
+               estadoValueMatch || estadoLabelMatch || fechaMatch || fechaCreatedMatch || 
+               plantelMatch || entidadMatch;
+      })();
+      
+      const matchEstado = !filtroEstado || r.estado === filtroEstado;
+      const matchTecnico = !filtroTecnico || r.tecnico?.name === filtroTecnico;
+      const matchPlantel = !filtroPlantel || r.bien?.plantel_id === filtroPlantel;
+      const matchCliente = !filtroCliente || r.cliente?.nombre_completo === filtroCliente;
+      return matchBusqueda && matchEstado && matchTecnico && matchPlantel && matchCliente;
+    } catch (error) {
+      console.error('Error al filtrar reparación:', error, r);
+      // Si hay un error, no incluir esta reparación en los resultados
+      return false;
+    }
   });
 
   const columnas = [
