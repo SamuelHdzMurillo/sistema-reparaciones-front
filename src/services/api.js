@@ -102,6 +102,32 @@ export const api = {
     });
     return response.json();
   },
+
+  actualizarEstadoReparacion: async (id, datos) => {
+    const response = await fetch(`${API_URL}/reparaciones/${id}/estado`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+        Authorization: `Bearer ${getToken()}`,
+      },
+      body: JSON.stringify(datos),
+    });
+    return response.json();
+  },
+
+  crearActualizacion: async (reparacionId, datos) => {
+    const response = await fetch(`${API_URL}/reparaciones/${reparacionId}/actualizaciones`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+        Authorization: `Bearer ${getToken()}`,
+      },
+      body: JSON.stringify(datos),
+    });
+    return response.json();
+  },
 };
 
 export const getToken = () => localStorage.getItem("token");

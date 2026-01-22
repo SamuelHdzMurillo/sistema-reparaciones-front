@@ -1,8 +1,7 @@
-import { useState, useEffect, useRef } from 'react';
-import { Input, Card, Table, Tag, Typography, Spin, Row, Col, Space, Select, Divider, Modal, Descriptions, Button, Timeline, Form, message, AutoComplete } from 'antd';
-import { SearchOutlined, ToolOutlined, InboxOutlined, CheckCircleOutlined, SendOutlined, EyeOutlined, ClockCircleOutlined, PrinterOutlined, PlusOutlined } from '@ant-design/icons';
+import { useState, useEffect } from 'react';
+import { Input, Card, Table, Tag, Typography, Spin, Row, Col, Space, Select, Divider, Modal, Descriptions, Button, Timeline, Form, message, AutoComplete, Tooltip } from 'antd';
+import { SearchOutlined, ToolOutlined, InboxOutlined, CheckCircleOutlined, SendOutlined, EyeOutlined, PlusOutlined, EditOutlined } from '@ant-design/icons';
 import { api } from '../services/api';
-import DocumentoEntrega from './DocumentoEntrega';
 
 const { Text, Title } = Typography;
 
@@ -41,17 +40,12 @@ const estadoConfig = {
   },
 };
 
-function Dashboard() {
+function Dashboard({ onVerDetalle }) {
   const [reparaciones, setReparaciones] = useState([]);
   const [loading, setLoading] = useState(true);
   const [busqueda, setBusqueda] = useState('');
   const [filtroEstado, setFiltroEstado] = useState(null);
   const [filtroTecnico, setFiltroTecnico] = useState(null);
-  const [modalVisible, setModalVisible] = useState(false);
-  const [detalleReparacion, setDetalleReparacion] = useState(null);
-  const [loadingDetalle, setLoadingDetalle] = useState(false);
-  const [actualizaciones, setActualizaciones] = useState([]);
-  const [loadingActualizaciones, setLoadingActualizaciones] = useState(false);
   const [modalNuevaReparacion, setModalNuevaReparacion] = useState(false);
   const [form] = Form.useForm();
   const [guardando, setGuardando] = useState(false);
@@ -69,7 +63,10 @@ function Dashboard() {
   const [cargandoBienes, setCargandoBienes] = useState(false);
   const [clientes, setClientes] = useState([]);
   const [cargandoClientes, setCargandoClientes] = useState(false);
-  const documentoRef = useRef(null);
+  const [modalActualizacion, setModalActualizacion] = useState(false);
+  const [reparacionSeleccionada, setReparacionSeleccionada] = useState(null);
+  const [formActualizacion] = Form.useForm();
+  const [guardandoActualizacion, setGuardandoActualizacion] = useState(false);
 
   useEffect(() => {
     cargarReparaciones();
@@ -96,82 +93,52 @@ function Dashboard() {
 
   const contarPorEstado = (estado) => reparaciones.filter(r => r.estado === estado).length;
 
-  const verDetalle = async (id) => {
-    setLoadingDetalle(true);
-    setLoadingActualizaciones(true);
-    setModalVisible(true);
-    setDetalleReparacion(null);
-    setActualizaciones([]);
-    try {
-      const [resDetalle, resActualizaciones] = await Promise.all([
-        api.getReparacion(id),
-        api.getActualizaciones(id)
-      ]);
-      if (resDetalle.exito) {
-        setDetalleReparacion(resDetalle.datos);
-      }
-      if (resActualizaciones.exito) {
-        setActualizaciones(resActualizaciones.datos?.actualizaciones || []);
-      }
-    } catch (error) {
-      console.error('Error al cargar detalle:', error);
-    } finally {
-      setLoadingDetalle(false);
-      setLoadingActualizaciones(false);
+  const verDetalle = (id) => {
+    if (onVerDetalle) {
+      onVerDetalle(id);
     }
   };
 
-  const imprimirDocumento = () => {
-    if (!documentoRef.current) return;
-    
-    const ventanaImpresion = window.open('', '_blank');
-    const contenido = documentoRef.current.innerHTML;
-    
-    ventanaImpresion.document.write(`
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <title>Orden de Servicio - ${detalleReparacion?.id || ''}</title>
-          <meta charset="utf-8">
-          <style>
-            @page {
-              size: A4;
-              margin: 0;
-            }
-            @media print {
-              body { 
-                margin: 0;
-                padding: 0;
-              }
-              * {
-                -webkit-print-color-adjust: exact;
-                print-color-adjust: exact;
-              }
-            }
-            body {
-              font-family: Arial, sans-serif;
-              margin: 0;
-              padding: 0;
-              background: white;
-            }
-          </style>
-        </head>
-        <body>
-          ${contenido}
-        </body>
-      </html>
-    `);
-    
-    ventanaImpresion.document.close();
-    ventanaImpresion.focus();
-    
-    setTimeout(() => {
-      ventanaImpresion.print();
-      setTimeout(() => {
-        ventanaImpresion.close();
-      }, 100);
-    }, 500);
+  const abrirModalActualizacion = (reparacion) => {
+    setReparacionSeleccionada(reparacion);
+    formActualizacion.setFieldsValue({
+      descripcion: '',
+      estado_nuevo: reparacion.estado,
+    });
+    setModalActualizacion(true);
   };
+
+  const cerrarModalActualizacion = () => {
+    setModalActualizacion(false);
+    setReparacionSeleccionada(null);
+    formActualizacion.resetFields();
+  };
+
+  const guardarActualizacion = async (valores) => {
+    setGuardandoActualizacion(true);
+    try {
+      const datos = {
+        descripcion: valores.descripcion,
+        estado_nuevo: valores.estado_nuevo !== reparacionSeleccionada?.estado ? valores.estado_nuevo : undefined,
+      };
+
+      const res = await api.crearActualizacion(reparacionSeleccionada.id, datos);
+      
+      if (res.exito) {
+        message.success('Actualización registrada correctamente');
+        cerrarModalActualizacion();
+        cargarReparaciones();
+      } else {
+        message.error(res.mensaje || 'Error al registrar la actualización');
+      }
+    } catch (error) {
+      console.error('Error al guardar actualización:', error);
+      message.error('Error de conexión con el servidor');
+    } finally {
+      setGuardandoActualizacion(false);
+    }
+  };
+
 
   const cargarPlanteles = async () => {
     setCargandoPlanteles(true);
@@ -402,15 +369,27 @@ function Dashboard() {
     },
     {
       title: 'Acciones',
-      width: 80,
+      width: 120,
+      fixed: 'right',
       render: (_, r) => (
-        <Button 
-          type="link" 
-          icon={<EyeOutlined />} 
-          onClick={() => verDetalle(r.id)}
-        >
-          Ver
-        </Button>
+        <Space size="small">
+          <Tooltip title="Ver detalle">
+            <Button 
+              type="link" 
+              icon={<EyeOutlined />} 
+              onClick={() => verDetalle(r.id)}
+              size="small"
+            />
+          </Tooltip>
+          <Tooltip title="Agregar actualización">
+            <Button 
+              type="link" 
+              icon={<EditOutlined />} 
+              onClick={() => abrirModalActualizacion(r)}
+              size="small"
+            />
+          </Tooltip>
+        </Space>
       ),
     },
   ];
@@ -561,115 +540,6 @@ function Dashboard() {
           }}
         />
       </Card>
-
-      <Modal
-        title="Detalle de Reparación"
-        open={modalVisible}
-        onCancel={() => setModalVisible(false)}
-        footer={null}
-        width={700}
-      >
-        {loadingDetalle ? (
-          <Spin style={{ display: 'block', margin: '40px auto' }} />
-        ) : detalleReparacion && (
-          <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-              <Tag color={estadoConfig[detalleReparacion.estado]?.color}>
-                {estadoConfig[detalleReparacion.estado]?.label}
-              </Tag>
-              {detalleReparacion.estado === 'listo' && (
-                <Button
-                  type="primary"
-                  icon={<PrinterOutlined />}
-                  onClick={imprimirDocumento}
-                  style={{ background: '#2e7d32', borderColor: '#2e7d32' }}
-                >
-                  Imprimir Documento de Entrega
-                </Button>
-              )}
-            </div>
-
-            <Descriptions title="Información del Bien" bordered size="small" column={2} style={{ marginBottom: 24 }}>
-              <Descriptions.Item label="Tipo">{detalleReparacion.bien?.tipo_bien}</Descriptions.Item>
-              <Descriptions.Item label="Marca">{detalleReparacion.bien?.marca}</Descriptions.Item>
-              <Descriptions.Item label="Modelo">{detalleReparacion.bien?.modelo}</Descriptions.Item>
-              <Descriptions.Item label="No. Serie">{detalleReparacion.bien?.numero_serie}</Descriptions.Item>
-              <Descriptions.Item label="No. Inventario">{detalleReparacion.bien?.numero_inventario}</Descriptions.Item>
-              <Descriptions.Item label="Plantel">{detalleReparacion.bien?.plantel}</Descriptions.Item>
-              <Descriptions.Item label="Entidad">{detalleReparacion.bien?.entidad}</Descriptions.Item>
-              <Descriptions.Item label="Especificaciones" span={2}>{detalleReparacion.bien?.especificaciones}</Descriptions.Item>
-            </Descriptions>
-
-            <Descriptions title="Información del Cliente" bordered size="small" column={2} style={{ marginBottom: 24 }}>
-              <Descriptions.Item label="Nombre">{detalleReparacion.cliente?.nombre_completo}</Descriptions.Item>
-              <Descriptions.Item label="Teléfono">{detalleReparacion.cliente?.telefono}</Descriptions.Item>
-            </Descriptions>
-
-            <Descriptions title="Información de la Reparación" bordered size="small" column={2} style={{ marginBottom: 24 }}>
-              <Descriptions.Item label="Falla Reportada" span={2}>{detalleReparacion.falla_reportada}</Descriptions.Item>
-              <Descriptions.Item label="Accesorios" span={2}>{detalleReparacion.accesorios_incluidos}</Descriptions.Item>
-              <Descriptions.Item label="Fecha Recepción">{detalleReparacion.fecha_recepcion}</Descriptions.Item>
-              <Descriptions.Item label="Última Actualización">{detalleReparacion.ultima_actualizacion}</Descriptions.Item>
-            </Descriptions>
-
-            <Descriptions title="Técnico Asignado" bordered size="small" column={2} style={{ marginBottom: 24 }}>
-              <Descriptions.Item label="Nombre">{detalleReparacion.tecnico?.nombre}</Descriptions.Item>
-              <Descriptions.Item label="No. Técnico">{detalleReparacion.tecnico?.numero}</Descriptions.Item>
-              <Descriptions.Item label="Email" span={2}>{detalleReparacion.tecnico?.email}</Descriptions.Item>
-            </Descriptions>
-
-            <Divider />
-
-            <Title level={5} style={{ marginBottom: 16, color: '#333' }}>
-              Historial de Actualizaciones
-            </Title>
-            {loadingActualizaciones ? (
-              <Spin style={{ display: 'block', margin: '20px auto' }} />
-            ) : actualizaciones.length > 0 ? (
-              <Timeline
-                mode="left"
-                items={actualizaciones.map((act, index) => ({
-                  key: act.id,
-                  dot: <ClockCircleOutlined style={{ fontSize: '16px', color: estadoConfig[act.estado_nuevo]?.border || '#1890ff' }} />,
-                  children: (
-                    <div style={{ marginLeft: 20 }}>
-                      <div style={{ marginBottom: 8 }}>
-                        <Tag color={estadoConfig[act.estado_anterior]?.color} style={{ marginRight: 8 }}>
-                          {estadoConfig[act.estado_anterior]?.label || act.estado_anterior}
-                        </Tag>
-                        <span style={{ margin: '0 8px', color: '#999' }}>→</span>
-                        <Tag color={estadoConfig[act.estado_nuevo]?.color}>
-                          {estadoConfig[act.estado_nuevo]?.label || act.estado_nuevo}
-                        </Tag>
-                      </div>
-                      <Text strong style={{ display: 'block', marginBottom: 4, color: '#333' }}>
-                        {act.descripcion}
-                      </Text>
-                      <div style={{ marginTop: 8, fontSize: 12, color: '#666' }}>
-                        <Text type="secondary">
-                          <strong>Técnico:</strong> {act.tecnico?.nombre} ({act.tecnico?.numero})
-                        </Text>
-                        <br />
-                        <Text type="secondary">
-                          <strong>Fecha:</strong> {new Date(act.fecha).toLocaleString('es-ES', {
-                            year: 'numeric',
-                            month: 'long',
-                            day: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit'
-                          })}
-                        </Text>
-                      </div>
-                    </div>
-                  ),
-                }))}
-              />
-            ) : (
-              <Text type="secondary">No hay actualizaciones registradas</Text>
-            )}
-          </div>
-        )}
-      </Modal>
 
       {/* Modal para nueva reparación */}
       <Modal
@@ -1030,17 +900,60 @@ function Dashboard() {
         </Form>
       </Modal>
 
-      {/* Documento oculto para impresión */}
-      <div style={{ display: 'none' }}>
-        <div ref={documentoRef}>
-          {detalleReparacion && (
-            <DocumentoEntrega 
-              reparacion={detalleReparacion} 
-              actualizaciones={actualizaciones}
+      {/* Modal para agregar actualización */}
+      <Modal
+        title={`Agregar Actualización - Reparación #${reparacionSeleccionada?.id || ''}`}
+        open={modalActualizacion}
+        onCancel={cerrarModalActualizacion}
+        footer={null}
+        width={600}
+      >
+        <Form
+          form={formActualizacion}
+          layout="vertical"
+          onFinish={guardarActualizacion}
+          autoComplete="off"
+        >
+          <Form.Item
+            name="descripcion"
+            label="Descripción de la Actualización"
+            rules={[{ required: true, message: 'Ingrese la descripción de la actualización' }]}
+          >
+            <Input.TextArea
+              rows={4}
+              placeholder="Describa los cambios o avances realizados en la reparación"
             />
-          )}
-        </div>
-      </div>
+          </Form.Item>
+          <Form.Item
+            name="estado_nuevo"
+            label="Estado (opcional)"
+            tooltip="Si desea cambiar el estado de la reparación, seleccione un nuevo estado. De lo contrario, deje el estado actual."
+          >
+            <Select
+              placeholder="Seleccione un estado (opcional)"
+              options={Object.entries(estadoConfig).map(([key, config]) => ({
+                value: key,
+                label: config.label,
+              }))}
+            />
+          </Form.Item>
+          <Form.Item style={{ marginTop: 24, marginBottom: 0 }}>
+            <Space>
+              <Button 
+                type="primary" 
+                htmlType="submit" 
+                loading={guardandoActualizacion}
+                style={{ background: '#2e7d32', borderColor: '#2e7d32' }}
+              >
+                Guardar Actualización
+              </Button>
+              <Button onClick={cerrarModalActualizacion}>
+                Cancelar
+              </Button>
+            </Space>
+          </Form.Item>
+        </Form>
+      </Modal>
 
       <style>{`
         .ant-table-thead > tr > th {

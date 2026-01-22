@@ -3,6 +3,7 @@ import { ConfigProvider, Layout, Button, Typography, Space } from 'antd';
 import { LogoutOutlined } from '@ant-design/icons';
 import Login from './components/Login';
 import Dashboard from './components/Dashboard';
+import DetalleReparacion from './components/DetalleReparacion';
 import { getToken, removeToken } from './services/api';
 
 const { Header, Content } = Layout;
@@ -11,6 +12,8 @@ const { Title, Text } = Typography;
 function App() {
   const [user, setUser] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [vistaActual, setVistaActual] = useState('dashboard');
+  const [reparacionId, setReparacionId] = useState(null);
 
   useEffect(() => {
     const token = getToken();
@@ -28,6 +31,18 @@ function App() {
     removeToken();
     setUser(null);
     setIsAuthenticated(false);
+    setVistaActual('dashboard');
+    setReparacionId(null);
+  };
+
+  const verDetalleReparacion = (id) => {
+    setReparacionId(id);
+    setVistaActual('detalle');
+  };
+
+  const volverAlDashboard = () => {
+    setVistaActual('dashboard');
+    setReparacionId(null);
   };
 
   return (
@@ -65,7 +80,14 @@ function App() {
             </Space>
           </Header>
           <Content style={{ padding: 24, background: '#f0f2f5' }}>
-            <Dashboard />
+            {vistaActual === 'dashboard' ? (
+              <Dashboard onVerDetalle={verDetalleReparacion} />
+            ) : (
+              <DetalleReparacion 
+                reparacionId={reparacionId} 
+                onVolver={volverAlDashboard}
+              />
+            )}
           </Content>
         </Layout>
       )}
