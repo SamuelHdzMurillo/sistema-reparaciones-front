@@ -231,21 +231,43 @@ function DetalleReparacion({ reparacionId, onVolver }) {
 
   if (loading) {
     return (
-      <div style={{ textAlign: 'center', padding: '100px 0' }}>
+      <div style={{ 
+        display: 'flex', 
+        flexDirection: 'column',
+        alignItems: 'center', 
+        justifyContent: 'center', 
+        minHeight: '60vh',
+        gap: 16
+      }}>
         <Spin size="large" />
-        <div style={{ marginTop: 16 }}>
-          <Text>Cargando detalle de reparación...</Text>
-        </div>
+        <Text type="secondary" style={{ fontSize: 14 }}>Cargando detalle de reparación...</Text>
       </div>
     );
   }
 
   if (!detalleReparacion) {
     return (
-      <div style={{ textAlign: 'center', padding: '100px 0' }}>
-        <Text type="danger">No se pudo cargar el detalle de la reparación</Text>
-        <br />
-        <Button onClick={onVolver} style={{ marginTop: 16 }}>
+      <div style={{ 
+        textAlign: 'center', 
+        padding: '100px 0',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        gap: 16
+      }}>
+        <Text type="danger" style={{ fontSize: 16 }}>No se pudo cargar el detalle de la reparación</Text>
+        <Button 
+          onClick={onVolver}
+          type="primary"
+          size="large"
+          style={{ 
+            marginTop: 8,
+            borderRadius: 8,
+            paddingLeft: 24,
+            paddingRight: 24,
+            height: 40
+          }}
+        >
           Volver al Dashboard
         </Button>
       </div>
@@ -253,65 +275,138 @@ function DetalleReparacion({ reparacionId, onVolver }) {
   }
 
   return (
-    <div>
-      {/* Header con botones de acción */}
+    <div style={{ padding: '0 4px' }}>
+      {/* Header mejorado con más profundidad */}
       <Card
+        bordered={false}
         style={{
-          marginBottom: 24,
-          borderRadius: 12,
-          boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+          marginBottom: 32,
+          borderRadius: 16,
+          background: '#ffffff',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.05), 0 4px 12px rgba(0,0,0,0.08)',
+          border: '1px solid rgba(0,0,0,0.04)',
         }}
+        bodyStyle={{ padding: '24px 32px' }}
       >
-        <Row justify="space-between" align="middle">
-          <Col>
-            <Space>
+        <Row justify="space-between" align="middle" wrap>
+          <Col xs={24} sm={24} md={14}>
+            <Space size="middle" wrap>
               <Button
                 icon={<ArrowLeftOutlined />}
                 onClick={onVolver}
+                style={{
+                  borderRadius: 8,
+                  height: 40,
+                  paddingLeft: 16,
+                  paddingRight: 16
+                }}
               >
                 Volver
               </Button>
-              <Title level={3} style={{ margin: 0, color: '#2e7d32' }}>
-                Reparación #{detalleReparacion.id}
-              </Title>
-              <Tag color={estadoConfig[detalleReparacion.estado]?.color} style={{ fontSize: 14, padding: '4px 12px' }}>
+              <div>
+                <Title level={2} style={{ 
+                  margin: 0, 
+                  color: '#1a1a1a',
+                  fontWeight: 600,
+                  fontSize: 28,
+                  letterSpacing: '-0.02em'
+                }}>
+                  Reparación #{detalleReparacion.id}
+                </Title>
+                <Text type="secondary" style={{ 
+                  fontSize: 14,
+                  marginTop: 4,
+                  display: 'block',
+                  color: '#8c8c8c'
+                }}>
+                  Detalle completo de la reparación
+                </Text>
+              </div>
+              <Tag 
+                color={estadoConfig[detalleReparacion.estado]?.color} 
+                style={{ 
+                  fontSize: 14, 
+                  padding: '6px 16px',
+                  borderRadius: 6,
+                  fontWeight: 500,
+                  marginTop: 4
+                }}
+              >
                 {estadoConfig[detalleReparacion.estado]?.label}
               </Tag>
             </Space>
           </Col>
-          <Col>
-            <Space>
+          <Col xs={24} sm={24} md={10}>
+            <Space size="small" wrap style={{ width: '100%', justifyContent: 'flex-end' }}>
               <Button
                 icon={<EditOutlined />}
                 onClick={() => setEditando(!editando)}
                 type={editando ? 'default' : 'primary'}
+                size="large"
+                style={{
+                  borderRadius: 8,
+                  height: 40,
+                  paddingLeft: 20,
+                  paddingRight: 20,
+                  fontWeight: 500
+                }}
               >
-                {editando ? 'Cancelar Edición' : 'Editar'}
+                {editando ? 'Cancelar' : 'Editar'}
               </Button>
               <Button
                 icon={<PlusOutlined />}
                 onClick={abrirModalNuevaActualizacion}
                 type="primary"
-                style={{ background: '#2196f3', borderColor: '#2196f3' }}
+                size="large"
+                style={{ 
+                  background: '#2196f3', 
+                  borderColor: '#2196f3',
+                  borderRadius: 8,
+                  height: 40,
+                  paddingLeft: 20,
+                  paddingRight: 20,
+                  fontWeight: 500,
+                  boxShadow: '0 2px 4px rgba(33, 150, 243, 0.2)'
+                }}
               >
-                Agregar Actualización
+                Actualización
               </Button>
               <Button
                 icon={<PlusOutlined />}
                 onClick={abrirModalActualizarEstado}
                 type="primary"
-                style={{ background: '#ff9800', borderColor: '#ff9800' }}
+                size="large"
+                style={{ 
+                  background: '#ff9800', 
+                  borderColor: '#ff9800',
+                  borderRadius: 8,
+                  height: 40,
+                  paddingLeft: 20,
+                  paddingRight: 20,
+                  fontWeight: 500,
+                  boxShadow: '0 2px 4px rgba(255, 152, 0, 0.2)'
+                }}
               >
-                Actualizar Estado
+                Estado
               </Button>
               {detalleReparacion.estado === 'listo' && (
                 <Button
                   type="primary"
                   icon={<PrinterOutlined />}
                   onClick={imprimirDocumento}
-                  style={{ background: '#2e7d32', borderColor: '#2e7d32' }}
+                  size="large"
+                  style={{ 
+                    background: '#2e7d32', 
+                    borderColor: '#2e7d32',
+                    borderRadius: 8,
+                    height: 40,
+                    paddingLeft: 20,
+                    paddingRight: 20,
+                    fontWeight: 500,
+                    boxShadow: '0 2px 4px rgba(46, 125, 50, 0.2)'
+                  }}
                 >
-                  Imprimir Documento
+                  Imprimir
                 </Button>
               )}
             </Space>
@@ -321,8 +416,24 @@ function DetalleReparacion({ reparacionId, onVolver }) {
 
       {/* Información del Bien */}
       <Card
-        title="Información del Bien"
-        style={{ marginBottom: 24, borderRadius: 12, boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}
+        title={
+          <div>
+            <Title level={5} style={{ margin: 0, color: '#1a1a1a', fontWeight: 600 }}>
+              Información del Bien
+            </Title>
+            <Text type="secondary" style={{ fontSize: 13, marginTop: 4, display: 'block' }}>
+              Detalles del equipo a reparar
+            </Text>
+          </div>
+        }
+        bordered={false}
+        style={{ 
+          marginBottom: 24, 
+          borderRadius: 16,
+          background: '#ffffff',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.05), 0 4px 12px rgba(0,0,0,0.08)',
+          border: '1px solid rgba(0,0,0,0.04)',
+        }}
       >
         <Descriptions bordered column={2} size="middle">
           <Descriptions.Item label="Tipo">{detalleReparacion.bien?.tipo_bien}</Descriptions.Item>
@@ -340,8 +451,24 @@ function DetalleReparacion({ reparacionId, onVolver }) {
 
       {/* Información del Cliente */}
       <Card
-        title="Información del Cliente"
-        style={{ marginBottom: 24, borderRadius: 12, boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}
+        title={
+          <div>
+            <Title level={5} style={{ margin: 0, color: '#1a1a1a', fontWeight: 600 }}>
+              Información del Cliente
+            </Title>
+            <Text type="secondary" style={{ fontSize: 13, marginTop: 4, display: 'block' }}>
+              Datos del cliente que solicita la reparación
+            </Text>
+          </div>
+        }
+        bordered={false}
+        style={{ 
+          marginBottom: 24, 
+          borderRadius: 16,
+          background: '#ffffff',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.05), 0 4px 12px rgba(0,0,0,0.08)',
+          border: '1px solid rgba(0,0,0,0.04)',
+        }}
       >
         <Descriptions bordered column={2} size="middle">
           <Descriptions.Item label="Nombre">{detalleReparacion.cliente?.nombre_completo}</Descriptions.Item>
@@ -351,8 +478,24 @@ function DetalleReparacion({ reparacionId, onVolver }) {
 
       {/* Información de la Reparación */}
       <Card
-        title="Información de la Reparación"
-        style={{ marginBottom: 24, borderRadius: 12, boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}
+        title={
+          <div>
+            <Title level={5} style={{ margin: 0, color: '#1a1a1a', fontWeight: 600 }}>
+              Información de la Reparación
+            </Title>
+            <Text type="secondary" style={{ fontSize: 13, marginTop: 4, display: 'block' }}>
+              Descripción del problema y accesorios
+            </Text>
+          </div>
+        }
+        bordered={false}
+        style={{ 
+          marginBottom: 24, 
+          borderRadius: 16,
+          background: '#ffffff',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.05), 0 4px 12px rgba(0,0,0,0.08)',
+          border: '1px solid rgba(0,0,0,0.04)',
+        }}
       >
         {editando ? (
           <Form
@@ -373,17 +516,36 @@ function DetalleReparacion({ reparacionId, onVolver }) {
             >
               <TextArea rows={3} />
             </Form.Item>
-            <Form.Item>
+            <Form.Item style={{ marginTop: 32, marginBottom: 0 }}>
               <Space>
                 <Button 
                   type="primary" 
                   htmlType="submit" 
                   loading={guardandoEdicion}
-                  style={{ background: '#2e7d32', borderColor: '#2e7d32' }}
+                  size="large"
+                  style={{ 
+                    background: '#2e7d32', 
+                    borderColor: '#2e7d32',
+                    borderRadius: 8,
+                    paddingLeft: 24,
+                    paddingRight: 24,
+                    height: 44,
+                    fontWeight: 500,
+                    boxShadow: '0 2px 4px rgba(46, 125, 50, 0.2)'
+                  }}
                 >
                   Guardar Cambios
                 </Button>
-                <Button onClick={() => setEditando(false)}>
+                <Button 
+                  onClick={() => setEditando(false)}
+                  size="large"
+                  style={{
+                    borderRadius: 8,
+                    paddingLeft: 24,
+                    paddingRight: 24,
+                    height: 44
+                  }}
+                >
                   Cancelar
                 </Button>
               </Space>
@@ -409,8 +571,24 @@ function DetalleReparacion({ reparacionId, onVolver }) {
 
       {/* Técnico Asignado */}
       <Card
-        title="Técnico Asignado"
-        style={{ marginBottom: 24, borderRadius: 12, boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}
+        title={
+          <div>
+            <Title level={5} style={{ margin: 0, color: '#1a1a1a', fontWeight: 600 }}>
+              Técnico Asignado
+            </Title>
+            <Text type="secondary" style={{ fontSize: 13, marginTop: 4, display: 'block' }}>
+              Información del técnico responsable
+            </Text>
+          </div>
+        }
+        bordered={false}
+        style={{ 
+          marginBottom: 24, 
+          borderRadius: 16,
+          background: '#ffffff',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.05), 0 4px 12px rgba(0,0,0,0.08)',
+          border: '1px solid rgba(0,0,0,0.04)',
+        }}
       >
         <Descriptions bordered column={2} size="middle">
           <Descriptions.Item label="Nombre">{detalleReparacion.tecnico?.nombre}</Descriptions.Item>
@@ -421,8 +599,24 @@ function DetalleReparacion({ reparacionId, onVolver }) {
 
       {/* Historial de Actualizaciones */}
       <Card
-        title="Historial de Actualizaciones"
-        style={{ marginBottom: 24, borderRadius: 12, boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}
+        title={
+          <div>
+            <Title level={5} style={{ margin: 0, color: '#1a1a1a', fontWeight: 600 }}>
+              Historial de Actualizaciones
+            </Title>
+            <Text type="secondary" style={{ fontSize: 13, marginTop: 4, display: 'block' }}>
+              Registro de cambios y avances en la reparación
+            </Text>
+          </div>
+        }
+        bordered={false}
+        style={{ 
+          marginBottom: 24, 
+          borderRadius: 16,
+          background: '#ffffff',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.05), 0 4px 12px rgba(0,0,0,0.08)',
+          border: '1px solid rgba(0,0,0,0.04)',
+        }}
       >
         {loadingActualizaciones ? (
           <Spin style={{ display: 'block', margin: '40px auto' }} />
@@ -472,11 +666,24 @@ function DetalleReparacion({ reparacionId, onVolver }) {
 
       {/* Modal para agregar actualización */}
       <Modal
-        title="Agregar Actualización a la Reparación"
+        title={
+          <div style={{ padding: '8px 0' }}>
+            <Title level={4} style={{ margin: 0, color: '#1a1a1a', fontWeight: 600 }}>
+              Agregar Actualización
+            </Title>
+            <Text type="secondary" style={{ fontSize: 13, marginTop: 4, display: 'block' }}>
+              Reparación #{detalleReparacion?.id || ''}
+            </Text>
+          </div>
+        }
         open={modalNuevaActualizacion}
         onCancel={cerrarModalNuevaActualizacion}
         footer={null}
         width={600}
+        style={{ top: 40 }}
+        styles={{
+          body: { padding: '24px' }
+        }}
       >
         <Form
           form={formNuevaActualizacion}
@@ -507,17 +714,36 @@ function DetalleReparacion({ reparacionId, onVolver }) {
               }))}
             />
           </Form.Item>
-          <Form.Item style={{ marginTop: 24, marginBottom: 0 }}>
+          <Form.Item style={{ marginTop: 32, marginBottom: 0 }}>
             <Space>
               <Button 
                 type="primary" 
                 htmlType="submit" 
                 loading={guardandoNuevaActualizacion}
-                style={{ background: '#2e7d32', borderColor: '#2e7d32' }}
+                size="large"
+                style={{ 
+                  background: '#2e7d32', 
+                  borderColor: '#2e7d32',
+                  borderRadius: 8,
+                  paddingLeft: 24,
+                  paddingRight: 24,
+                  height: 40,
+                  fontWeight: 500,
+                  boxShadow: '0 2px 4px rgba(46, 125, 50, 0.2)'
+                }}
               >
                 Guardar Actualización
               </Button>
-              <Button onClick={cerrarModalNuevaActualizacion}>
+              <Button 
+                onClick={cerrarModalNuevaActualizacion}
+                size="large"
+                style={{
+                  borderRadius: 8,
+                  paddingLeft: 24,
+                  paddingRight: 24,
+                  height: 40
+                }}
+              >
                 Cancelar
               </Button>
             </Space>
@@ -527,7 +753,16 @@ function DetalleReparacion({ reparacionId, onVolver }) {
 
       {/* Modal para actualizar estado */}
       <Modal
-        title="Actualizar Estado de la Reparación"
+        title={
+          <div style={{ padding: '8px 0' }}>
+            <Title level={4} style={{ margin: 0, color: '#1a1a1a', fontWeight: 600 }}>
+              Actualizar Estado
+            </Title>
+            <Text type="secondary" style={{ fontSize: 13, marginTop: 4, display: 'block' }}>
+              Reparación #{detalleReparacion?.id || ''}
+            </Text>
+          </div>
+        }
         open={modalActualizarEstado}
         onCancel={() => {
           setModalActualizarEstado(false);
@@ -535,6 +770,10 @@ function DetalleReparacion({ reparacionId, onVolver }) {
         }}
         footer={null}
         width={600}
+        style={{ top: 40 }}
+        styles={{
+          body: { padding: '24px' }
+        }}
       >
         <Form
           form={formEstado}
@@ -563,20 +802,39 @@ function DetalleReparacion({ reparacionId, onVolver }) {
               placeholder="Describa los cambios realizados (opcional)"
             />
           </Form.Item>
-          <Form.Item style={{ marginTop: 24, marginBottom: 0 }}>
+          <Form.Item style={{ marginTop: 32, marginBottom: 0 }}>
             <Space>
               <Button 
                 type="primary" 
                 htmlType="submit" 
                 loading={guardandoEstado}
-                style={{ background: '#2e7d32', borderColor: '#2e7d32' }}
+                size="large"
+                style={{ 
+                  background: '#2e7d32', 
+                  borderColor: '#2e7d32',
+                  borderRadius: 8,
+                  paddingLeft: 24,
+                  paddingRight: 24,
+                  height: 40,
+                  fontWeight: 500,
+                  boxShadow: '0 2px 4px rgba(46, 125, 50, 0.2)'
+                }}
               >
                 Actualizar Estado
               </Button>
-              <Button onClick={() => {
-                setModalActualizarEstado(false);
-                formEstado.resetFields();
-              }}>
+              <Button 
+                onClick={() => {
+                  setModalActualizarEstado(false);
+                  formEstado.resetFields();
+                }}
+                size="large"
+                style={{
+                  borderRadius: 8,
+                  paddingLeft: 24,
+                  paddingRight: 24,
+                  height: 40
+                }}
+              >
                 Cancelar
               </Button>
             </Space>
@@ -593,6 +851,46 @@ function DetalleReparacion({ reparacionId, onVolver }) {
           />
         </div>
       </div>
+
+      <style>{`
+        .ant-card-head-title {
+          padding: 0 !important;
+        }
+        .ant-descriptions-item-label {
+          font-weight: 500;
+          color: #595959;
+          background: #fafafa;
+        }
+        .ant-descriptions-item-content {
+          color: #1a1a1a;
+        }
+        .ant-timeline-item-head {
+          background: transparent;
+        }
+        .ant-modal-header {
+          border-bottom: 1px solid #f0f0f0;
+          padding: 20px 24px;
+        }
+        .ant-modal-title {
+          font-weight: 600;
+        }
+        .ant-form-item-label > label {
+          font-weight: 500;
+          color: #595959;
+        }
+        .ant-input, .ant-select-selector, .ant-input-affix-wrapper {
+          border-radius: 8px !important;
+          transition: all 0.2s ease;
+        }
+        .ant-tag {
+          border-radius: 4px;
+          font-weight: 500;
+          padding: 2px 10px;
+        }
+        .ant-divider {
+          margin: 24px 0;
+        }
+      `}</style>
     </div>
   );
 }
