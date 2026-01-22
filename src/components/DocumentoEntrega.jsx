@@ -1,4 +1,5 @@
 import React from 'react';
+import logoCecyte from '../assets/logo_cecyte_grande.webp';
 
 function DocumentoEntrega({ reparacion, actualizaciones }) {
   const fechaActual = new Date().toLocaleDateString('es-ES', {
@@ -21,12 +22,60 @@ function DocumentoEntrega({ reparacion, actualizaciones }) {
     : null;
 
   return (
-    <div style={styles.container}>
+    <>
+      <style>{`
+        @media print {
+          @page {
+            size: A4;
+            margin: 4mm 6mm;
+          }
+          * {
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+            color-adjust: exact !important;
+          }
+          .documento-entrega .section {
+            box-shadow: none !important;
+          }
+          body {
+            margin: 0 !important;
+            padding: 0 !important;
+          }
+          .documento-entrega {
+            margin: 0 !important;
+            padding: 4mm 6mm !important;
+            box-shadow: none !important;
+            width: 100% !important;
+            max-width: 100% !important;
+          }
+          .documento-entrega .section {
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+            margin-bottom: 6px !important;
+          }
+          .documento-entrega table {
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+          }
+          .documento-entrega tr {
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+          }
+          .documento-entrega .signaturesSection,
+          .documento-entrega .footer {
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+          }
+        }
+      `}</style>
+      <div style={styles.container} className="documento-entrega">
       <div style={styles.header}>
         <div style={styles.logoContainer}>
-          <div style={styles.logoPlaceholder}>
-            <span style={styles.logoText}>LOGO</span>
-          </div>
+          <img 
+            src={logoCecyte} 
+            alt="Logo CECYTE" 
+            style={styles.logo}
+          />
         </div>
         <div style={styles.headerInfo}>
           <div style={styles.institution}>
@@ -152,38 +201,28 @@ function DocumentoEntrega({ reparacion, actualizaciones }) {
 
       <div style={styles.signaturesSection}>
         <div style={styles.signatureBox}>
+          <div style={styles.signatureTitle}>TÉCNICO</div>
           <div style={styles.signatureLine}></div>
-          <div style={styles.signatureLabel}>
-            <strong>TÉCNICO</strong>
-            <br />
-            {reparacion?.tecnico?.nombre || 'N/A'}
-            <br />
-            {reparacion?.tecnico?.numero || ''}
+          <div style={styles.signatureInfo}>
+            <div style={styles.signatureName}>{reparacion?.tecnico?.nombre || 'N/A'}</div>
+            {reparacion?.tecnico?.numero && (
+              <div style={styles.signatureNumber}>{reparacion.tecnico.numero}</div>
+            )}
           </div>
         </div>
         <div style={styles.signatureBox}>
+          <div style={styles.signatureTitle}>RECIBE</div>
           <div style={styles.signatureLine}></div>
-          <div style={styles.signatureLabel}>
-            <strong>RECIBE</strong>
-            <br />
-            {reparacion?.cliente?.nombre_completo || 'N/A'}
-            <br />
-            {reparacion?.cliente?.telefono || ''}
+          <div style={styles.signatureInfo}>
+            <div style={styles.signatureName}>{reparacion?.cliente?.nombre_completo || 'N/A'}</div>
+            {reparacion?.cliente?.telefono && (
+              <div style={styles.signatureNumber}>{reparacion.cliente.telefono}</div>
+            )}
           </div>
         </div>
       </div>
-
-      <div style={styles.footer}>
-        <div style={styles.footerSection}>
-          <div><strong>Jefe de Área de Inventario:</strong></div>
-          <div style={styles.footerLine}></div>
-        </div>
-        <div style={styles.footerSection}>
-          <div><strong>Verificado por:</strong></div>
-          <div style={styles.footerLine}></div>
-        </div>
-      </div>
     </div>
+    </>
   );
 }
 
@@ -192,11 +231,11 @@ const styles = {
     width: '210mm',
     minHeight: '297mm',
     margin: '0 auto',
-    padding: '20mm',
+    padding: '6mm 8mm',
     backgroundColor: '#fff',
     fontFamily: 'Arial, sans-serif',
-    fontSize: '11pt',
-    lineHeight: '1.4',
+    fontSize: '10pt',
+    lineHeight: '1.25',
     color: '#000',
     boxSizing: 'border-box',
   },
@@ -204,106 +243,141 @@ const styles = {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: '20px',
-    borderBottom: '2px solid #000',
-    paddingBottom: '15px',
+    marginBottom: '6px',
+    borderBottom: '3px solid #2c5aa0',
+    paddingBottom: '4px',
+    paddingTop: '4px',
+    backgroundColor: '#f8f9fa',
+    borderRadius: '4px',
+    pageBreakInside: 'avoid',
   },
   logoContainer: {
     width: '80px',
     height: '80px',
-  },
-  logoPlaceholder: {
-    width: '100%',
-    height: '100%',
-    border: '2px dashed #666',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#f5f5f5',
+    flexShrink: 0,
   },
-  logoText: {
-    fontSize: '10pt',
-    color: '#999',
-    fontWeight: 'bold',
+  logo: {
+    maxWidth: '100%',
+    maxHeight: '100%',
+    width: 'auto',
+    height: 'auto',
+    objectFit: 'contain',
   },
   headerInfo: {
     flex: 1,
     textAlign: 'center',
   },
   institution: {
-    fontSize: '12pt',
+    fontSize: '11pt',
     fontWeight: 'bold',
-    lineHeight: '1.5',
+    lineHeight: '1.4',
     textTransform: 'uppercase',
+    color: '#2c5aa0',
   },
   documentInfo: {
     display: 'flex',
     justifyContent: 'space-between',
-    marginBottom: '20px',
-    fontSize: '11pt',
+    marginBottom: '6px',
+    fontSize: '10pt',
+    padding: '5px 8px',
+    backgroundColor: '#e8f4f8',
+    borderRadius: '4px',
+    borderLeft: '4px solid #2c5aa0',
   },
   dateSection: {
     flex: 1,
+    color: '#2c5aa0',
+    fontWeight: 'bold',
   },
   orderSection: {
     flex: 1,
     textAlign: 'right',
+    color: '#2c5aa0',
+    fontWeight: 'bold',
   },
   section: {
-    marginBottom: '20px',
+    marginBottom: '6px',
+    pageBreakInside: 'avoid',
+    backgroundColor: '#ffffff',
+    borderRadius: '4px',
+    border: '1px solid #e0e0e0',
+    padding: '5px',
+    boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
   },
   sectionTitle: {
-    backgroundColor: '#333',
+    backgroundColor: '#2c5aa0',
     color: '#fff',
-    padding: '8px 12px',
+    padding: '6px 10px',
     fontWeight: 'bold',
-    fontSize: '11pt',
-    marginBottom: '10px',
+    fontSize: '10pt',
+    marginBottom: '8px',
+    marginTop: '-6px',
+    marginLeft: '-6px',
+    marginRight: '-6px',
     textTransform: 'uppercase',
+    borderRadius: '4px 4px 0 0',
+    letterSpacing: '0.5px',
   },
   table: {
     width: '100%',
     borderCollapse: 'collapse',
-    marginBottom: '10px',
+    marginBottom: '6px',
   },
   labelCell: {
     width: '35%',
-    padding: '8px',
-    border: '1px solid #000',
-    backgroundColor: '#f5f5f5',
+    padding: '6px',
+    border: '1px solid #d0d0d0',
+    backgroundColor: '#e8f4f8',
     fontWeight: 'bold',
+    fontSize: '9pt',
+    color: '#2c5aa0',
   },
   valueCell: {
     width: '65%',
-    padding: '8px',
-    border: '1px solid #000',
+    padding: '6px',
+    border: '1px solid #d0d0d0',
+    fontSize: '9pt',
+    backgroundColor: '#ffffff',
   },
   descriptionBox: {
-    border: '1px solid #000',
-    padding: '15px',
-    minHeight: '80px',
+    border: '1px solid #d0d0d0',
+    borderLeft: '4px solid #28a745',
+    padding: '8px',
+    minHeight: '40px',
     textAlign: 'justify',
-    backgroundColor: '#fafafa',
+    backgroundColor: '#f8fff9',
+    fontSize: '9pt',
+    borderRadius: '4px',
+    lineHeight: '1.5',
   },
   observationsBox: {
-    border: '1px solid #000',
-    padding: '10px',
+    border: '1px solid #d0d0d0',
+    padding: '8px',
+    backgroundColor: '#f8f9fa',
+    borderRadius: '4px',
   },
   observationsTable: {
     width: '100%',
     borderCollapse: 'collapse',
   },
   obsHeader: {
-    border: '1px solid #000',
-    padding: '8px',
-    backgroundColor: '#e0e0e0',
+    border: '1px solid #d0d0d0',
+    padding: '6px',
+    backgroundColor: '#2c5aa0',
+    color: '#ffffff',
     fontWeight: 'bold',
     textAlign: 'center',
+    fontSize: '9pt',
   },
   obsCell: {
-    border: '1px solid #000',
-    padding: '8px',
+    border: '1px solid #d0d0d0',
+    padding: '6px',
     verticalAlign: 'top',
+    fontSize: '9pt',
+    backgroundColor: '#ffffff',
   },
   serialText: {
     fontSize: '9pt',
@@ -313,35 +387,54 @@ const styles = {
   signaturesSection: {
     display: 'flex',
     justifyContent: 'space-around',
-    marginTop: '40px',
-    marginBottom: '30px',
+    marginTop: '10px',
+    marginBottom: '0px',
+    padding: '8px',
+    backgroundColor: '#f0f7ff',
+    borderRadius: '6px',
+    border: '2px solid #2c5aa0',
+    pageBreakInside: 'avoid',
   },
   signatureBox: {
-    width: '45%',
+    width: '42%',
     textAlign: 'center',
+    padding: '8px',
+    backgroundColor: '#ffffff',
+    borderRadius: '6px',
+    border: '1px solid #2c5aa0',
+    boxShadow: '0 2px 4px rgba(44, 90, 160, 0.1)',
+  },
+  signatureTitle: {
+    fontSize: '10pt',
+    fontWeight: 'bold',
+    color: '#2c5aa0',
+    marginBottom: '6px',
+    textTransform: 'uppercase',
+    letterSpacing: '1px',
+    paddingBottom: '4px',
+    borderBottom: '2px solid #e8f4f8',
   },
   signatureLine: {
-    borderTop: '1px solid #000',
-    marginBottom: '10px',
-    height: '60px',
+    height: '70px',
+    marginBottom: '4px',
+    marginTop: '4px',
+    position: 'relative',
   },
-  signatureLabel: {
-    fontSize: '10pt',
-    lineHeight: '1.6',
+  signatureInfo: {
+    marginTop: '4px',
   },
-  footer: {
-    marginTop: '30px',
-    display: 'flex',
-    justifyContent: 'space-between',
-    fontSize: '10pt',
+  signatureName: {
+    fontSize: '9pt',
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: '2px',
+    lineHeight: '1.3',
   },
-  footerSection: {
-    width: '45%',
-  },
-  footerLine: {
-    borderTop: '1px solid #000',
-    marginTop: '5px',
-    height: '40px',
+  signatureNumber: {
+    fontSize: '8.5pt',
+    color: '#666',
+    fontStyle: 'italic',
+    marginTop: '2px',
   },
 };
 
