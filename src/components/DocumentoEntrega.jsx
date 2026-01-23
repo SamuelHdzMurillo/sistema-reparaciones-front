@@ -66,6 +66,14 @@ function DocumentoEntrega({ reparacion, actualizaciones }) {
             page-break-inside: avoid !important;
             break-inside: avoid !important;
           }
+          .documento-entrega .imagesContainer {
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+          }
+          .documento-entrega .imageWrapper {
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+          }
         }
       `}</style>
       <div style={styles.container} className="documento-entrega">
@@ -229,6 +237,39 @@ function DocumentoEntrega({ reparacion, actualizaciones }) {
           </div>
         </div>
       </div>
+
+      {reparacion?.bien?.imagenes && 
+       Array.isArray(reparacion.bien.imagenes) && 
+       reparacion.bien.imagenes.length > 0 && (() => {
+        const imagenesValidas = reparacion.bien.imagenes
+          .filter(url => typeof url === 'string' && url.trim() !== '')
+          .map(url => url.trim());
+        
+        if (imagenesValidas.length > 0) {
+          return (
+            <div style={styles.section}>
+              <div style={styles.sectionTitle}>IMÁGENES DEL BIEN</div>
+              <div style={styles.imagesContainer}>
+                {imagenesValidas.map((url, index) => (
+                  <div key={index} style={styles.imageWrapper}>
+                    <img
+                      src={url}
+                      alt={`Imagen ${index + 1} del bien`}
+                      style={styles.image}
+                      onError={(e) => {
+                        console.error('Error al cargar imagen:', url);
+                        e.target.style.display = 'none';
+                      }}
+                    />
+                    <div style={styles.imageLabel}>Imagen {index + 1}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+        }
+        return null;
+      })()}
     </div>
     </>
   );
@@ -443,6 +484,42 @@ const styles = {
     color: '#666',
     fontStyle: 'italic',
     marginTop: '2px',
+  },
+  imagesContainer: {
+    display: 'flex',
+    flexWrap: 'wrap',
+    gap: '8px',
+    justifyContent: 'flex-start',
+    padding: '8px',
+    border: '1px solid #d0d0d0',
+    borderRadius: '4px',
+    backgroundColor: '#f8f9fa',
+  },
+  imageWrapper: {
+    flex: '0 0 calc(50% - 4px)',
+    maxWidth: 'calc(50% - 4px)',
+    marginBottom: '8px',
+    border: '1px solid #d0d0d0',
+    borderRadius: '4px',
+    overflow: 'hidden',
+    backgroundColor: '#ffffff',
+    pageBreakInside: 'avoid',
+  },
+  image: {
+    width: '100%',
+    height: 'auto',
+    display: 'block',
+    maxHeight: '150mm',
+    objectFit: 'contain',
+  },
+  imageLabel: {
+    textAlign: 'center',
+    padding: '4px',
+    fontSize: '8pt',
+    color: '#666',
+    backgroundColor: '#f0f0f0',
+    borderTop: '1px solid #d0d0d0',
+    fontWeight: 'bold',
   },
 };
 
