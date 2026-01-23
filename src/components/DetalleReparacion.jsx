@@ -1,11 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
 import { 
   Card, Tag, Typography, Spin, Descriptions, Button, Timeline, 
-  Divider, Modal, Form, Input, Select, message, Space, Row, Col 
+  Divider, Modal, Form, Input, Select, message, Space, Row, Col
 } from 'antd';
 import { 
   ArrowLeftOutlined, PrinterOutlined, EditOutlined, 
-  ClockCircleOutlined, PlusOutlined 
+  ClockCircleOutlined, PlusOutlined, PictureOutlined 
 } from '@ant-design/icons';
 import { api } from '../services/api';
 import DocumentoEntrega from './DocumentoEntrega';
@@ -61,10 +61,23 @@ function DetalleReparacion({ reparacionId, onVolver }) {
   const documentoRef = useRef(null);
 
   useEffect(() => {
-    cargarDetalle();
+    if (reparacionId) {
+      cargarDetalle();
+    } else {
+      setDetalleReparacion(null);
+      setLoading(false);
+      setLoadingActualizaciones(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [reparacionId]);
 
   const cargarDetalle = async () => {
+    if (!reparacionId) {
+      setLoading(false);
+      setLoadingActualizaciones(false);
+      return;
+    }
+
     setLoading(true);
     setLoadingActualizaciones(true);
     try {
@@ -72,19 +85,53 @@ function DetalleReparacion({ reparacionId, onVolver }) {
         api.getReparacion(reparacionId),
         api.getActualizaciones(reparacionId)
       ]);
-      if (resDetalle.exito) {
-        setDetalleReparacion(resDetalle.datos);
+      
+      if (resDetalle && resDetalle.exito) {
+        let datosReparacion = resDetalle.datos;
+        
+        // Si el bien tiene ID pero no tiene imágenes, intentar obtener el detalle completo del bien
+        if (datosReparacion?.bien?.id && (!datosReparacion.bien.imagenes || datosReparacion.bien.imagenes.length === 0)) {
+          try {
+            const resBien = await api.getBien(datosReparacion.bien.id);
+            if (resBien && resBien.exito && resBien.datos) {
+              // Combinar los datos del bien con las imágenes
+              datosReparacion = {
+                ...datosReparacion,
+                bien: {
+                  ...datosReparacion.bien,
+                  ...resBien.datos,
+                  // Asegurar que las imágenes estén presentes
+                  imagenes: resBien.datos.imagenes || datosReparacion.bien.imagenes || []
+                }
+              };
+            }
+          } catch (error) {
+            console.warn('No se pudo obtener el detalle del bien:', error);
+            // Continuar con los datos originales
+          }
+        }
+        
+        setDetalleReparacion(datosReparacion);
         formEditar.setFieldsValue({
-          falla_reportada: resDetalle.datos.falla_reportada,
-          accesorios_incluidos: resDetalle.datos.accesorios_incluidos,
+          falla_reportada: datosReparacion?.falla_reportada || '',
+          accesorios_incluidos: datosReparacion?.accesorios_incluidos || '',
         });
+      } else {
+        // Si la respuesta no fue exitosa, establecer detalleReparacion a null
+        setDetalleReparacion(null);
+        message.error(resDetalle?.mensaje || 'No se pudo cargar el detalle de la reparación');
       }
-      if (resActualizaciones.exito) {
+      
+      if (resActualizaciones && resActualizaciones.exito) {
         setActualizaciones(resActualizaciones.datos?.actualizaciones || []);
+      } else {
+        setActualizaciones([]);
       }
     } catch (error) {
       console.error('Error al cargar detalle:', error);
-      message.error('Error al cargar el detalle de la reparación');
+      setDetalleReparacion(null);
+      setActualizaciones([]);
+      message.error('Error al cargar el detalle de la reparación. Por favor, intente nuevamente.');
     } finally {
       setLoading(false);
       setLoadingActualizaciones(false);
@@ -278,7 +325,7 @@ function DetalleReparacion({ reparacionId, onVolver }) {
     <div style={{ padding: '0 4px' }}>
       {/* Header mejorado con más profundidad */}
       <Card
-        bordered={false}
+        variant="outlined"
         style={{
           marginBottom: 32,
           borderRadius: 16,
@@ -286,7 +333,7 @@ function DetalleReparacion({ reparacionId, onVolver }) {
           boxShadow: '0 1px 3px rgba(0,0,0,0.05), 0 4px 12px rgba(0,0,0,0.08)',
           border: '1px solid rgba(0,0,0,0.04)',
         }}
-        bodyStyle={{ padding: '24px 32px' }}
+        styles={{ body: { padding: '24px 32px' } }}
       >
         <Row justify="space-between" align="middle" wrap>
           <Col xs={24} sm={24} md={14}>
@@ -311,7 +358,7 @@ function DetalleReparacion({ reparacionId, onVolver }) {
                   fontSize: 28,
                   letterSpacing: '-0.02em'
                 }}>
-                  Reparación #{detalleReparacion.id}
+                  Reparación #{detalleReparacion?.id || 'N/A'}
                 </Title>
                 <Text type="secondary" style={{ 
                   fontSize: 14,
@@ -323,7 +370,7 @@ function DetalleReparacion({ reparacionId, onVolver }) {
                 </Text>
               </div>
               <Tag 
-                color={estadoConfig[detalleReparacion.estado]?.color} 
+                color={estadoConfig[detalleReparacion?.estado]?.color || 'default'} 
                 style={{ 
                   fontSize: 14, 
                   padding: '6px 16px',
@@ -332,7 +379,7 @@ function DetalleReparacion({ reparacionId, onVolver }) {
                   marginTop: 4
                 }}
               >
-                {estadoConfig[detalleReparacion.estado]?.label}
+                {estadoConfig[detalleReparacion?.estado]?.label || detalleReparacion?.estado || 'Desconocido'}
               </Tag>
             </Space>
           </Col>
@@ -389,7 +436,7 @@ function DetalleReparacion({ reparacionId, onVolver }) {
               >
                 Estado
               </Button>
-              {detalleReparacion.estado === 'listo' && (
+              {detalleReparacion?.estado === 'listo' && (
                 <Button
                   type="primary"
                   icon={<PrinterOutlined />}
@@ -426,7 +473,7 @@ function DetalleReparacion({ reparacionId, onVolver }) {
             </Text>
           </div>
         }
-        bordered={false}
+        variant="outlined"
         style={{ 
           marginBottom: 24, 
           borderRadius: 16,
@@ -436,17 +483,107 @@ function DetalleReparacion({ reparacionId, onVolver }) {
         }}
       >
         <Descriptions bordered column={2} size="middle">
-          <Descriptions.Item label="Tipo">{detalleReparacion.bien?.tipo_bien}</Descriptions.Item>
-          <Descriptions.Item label="Marca">{detalleReparacion.bien?.marca}</Descriptions.Item>
+          <Descriptions.Item label="Tipo">{detalleReparacion.bien?.tipo_bien || 'N/A'}</Descriptions.Item>
+          <Descriptions.Item label="Marca">{detalleReparacion.bien?.marca || 'N/A'}</Descriptions.Item>
           <Descriptions.Item label="Modelo">{detalleReparacion.bien?.modelo || 'N/A'}</Descriptions.Item>
           <Descriptions.Item label="No. Serie">{detalleReparacion.bien?.numero_serie || 'N/A'}</Descriptions.Item>
-          <Descriptions.Item label="No. Inventario">{detalleReparacion.bien?.numero_inventario}</Descriptions.Item>
-          <Descriptions.Item label="Plantel">{detalleReparacion.bien?.plantel}</Descriptions.Item>
-          <Descriptions.Item label="Entidad">{detalleReparacion.bien?.entidad}</Descriptions.Item>
+          <Descriptions.Item label="No. Inventario">{detalleReparacion.bien?.numero_inventario || 'N/A'}</Descriptions.Item>
+          <Descriptions.Item label="Plantel">
+            {typeof detalleReparacion.bien?.plantel === 'string' 
+              ? detalleReparacion.bien.plantel 
+              : detalleReparacion.bien?.plantel?.nombre || detalleReparacion.bien?.plantel?.name || 'N/A'}
+          </Descriptions.Item>
+          <Descriptions.Item label="Entidad">
+            {typeof detalleReparacion.bien?.entidad === 'string' 
+              ? detalleReparacion.bien.entidad 
+              : detalleReparacion.bien?.entidad?.nombre || detalleReparacion.bien?.entidad?.name || 'N/A'}
+          </Descriptions.Item>
           <Descriptions.Item label="Especificaciones" span={2}>
             {detalleReparacion.bien?.especificaciones || 'N/A'}
           </Descriptions.Item>
         </Descriptions>
+        
+        {/* Galería de Imágenes del Bien */}
+        {detalleReparacion.bien?.imagenes && 
+         Array.isArray(detalleReparacion.bien.imagenes) && 
+         detalleReparacion.bien.imagenes.length > 0 && (() => {
+          try {
+            // Filtrar solo URLs válidas (strings no vacíos)
+            const imagenesValidas = detalleReparacion.bien.imagenes
+              .filter(url => typeof url === 'string' && url.trim() !== '')
+              .map(url => url.trim());
+            
+            if (imagenesValidas.length > 0) {
+              return (
+                <div style={{ marginTop: 24 }}>
+                  <Divider />
+                  <div style={{ marginBottom: 16 }}>
+                    <Title level={5} style={{ margin: 0, color: '#1a1a1a', fontWeight: 600 }}>
+                      <PictureOutlined style={{ marginRight: 8 }} />
+                      Imágenes del Bien
+                    </Title>
+                    <Text type="secondary" style={{ fontSize: 13, marginTop: 4, display: 'block' }}>
+                      {imagenesValidas.length} imagen{imagenesValidas.length > 1 ? 'es' : ''} disponible{imagenesValidas.length > 1 ? 's' : ''}
+                    </Text>
+                  </div>
+                  <Row gutter={[16, 16]}>
+                    {imagenesValidas.map((url, index) => (
+                      <Col xs={12} sm={8} md={6} lg={4} key={`img-${index}-${url}`}>
+                        <div
+                          style={{
+                            position: 'relative',
+                            width: '100%',
+                            aspectRatio: '1 / 1',
+                            borderRadius: 8,
+                            overflow: 'hidden',
+                            border: '1px solid #e0e0e0',
+                            cursor: 'pointer',
+                            transition: 'all 0.3s ease',
+                            background: '#f5f5f5',
+                            minHeight: '150px'
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
+                            e.currentTarget.style.transform = 'translateY(-2px)';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.boxShadow = 'none';
+                            e.currentTarget.style.transform = 'translateY(0)';
+                          }}
+                          onClick={() => {
+                            window.open(url, '_blank');
+                          }}
+                        >
+                          <img
+                            src={url}
+                            alt={`Imagen ${index + 1} del bien`}
+                            style={{
+                              position: 'absolute',
+                              top: 0,
+                              left: 0,
+                              width: '100%',
+                              height: '100%',
+                              objectFit: 'cover',
+                              display: 'block'
+                            }}
+                            onError={(e) => {
+                              console.error('Error al cargar imagen:', url);
+                              e.target.style.display = 'none';
+                            }}
+                          />
+                        </div>
+                      </Col>
+                    ))}
+                  </Row>
+                </div>
+              );
+            }
+            return null;
+          } catch (error) {
+            console.error('Error al renderizar imágenes:', error);
+            return null;
+          }
+        })()}
       </Card>
 
       {/* Información del Cliente */}
@@ -461,7 +598,7 @@ function DetalleReparacion({ reparacionId, onVolver }) {
             </Text>
           </div>
         }
-        bordered={false}
+        variant="outlined"
         style={{ 
           marginBottom: 24, 
           borderRadius: 16,
@@ -471,7 +608,7 @@ function DetalleReparacion({ reparacionId, onVolver }) {
         }}
       >
         <Descriptions bordered column={2} size="middle">
-          <Descriptions.Item label="Nombre">{detalleReparacion.cliente?.nombre_completo}</Descriptions.Item>
+          <Descriptions.Item label="Nombre">{detalleReparacion.cliente?.nombre_completo || 'N/A'}</Descriptions.Item>
           <Descriptions.Item label="Teléfono">{detalleReparacion.cliente?.telefono || 'N/A'}</Descriptions.Item>
         </Descriptions>
       </Card>
@@ -488,7 +625,7 @@ function DetalleReparacion({ reparacionId, onVolver }) {
             </Text>
           </div>
         }
-        bordered={false}
+        variant="outlined"
         style={{ 
           marginBottom: 24, 
           borderRadius: 16,
@@ -554,16 +691,16 @@ function DetalleReparacion({ reparacionId, onVolver }) {
         ) : (
           <Descriptions bordered column={2} size="middle">
             <Descriptions.Item label="Falla Reportada" span={2}>
-              {detalleReparacion.falla_reportada}
+              {detalleReparacion?.falla_reportada || 'N/A'}
             </Descriptions.Item>
             <Descriptions.Item label="Accesorios" span={2}>
-              {detalleReparacion.accesorios_incluidos || 'N/A'}
+              {detalleReparacion?.accesorios_incluidos || 'N/A'}
             </Descriptions.Item>
             <Descriptions.Item label="Fecha Recepción">
-              {detalleReparacion.fecha_recepcion}
+              {detalleReparacion?.fecha_recepcion || 'N/A'}
             </Descriptions.Item>
             <Descriptions.Item label="Última Actualización">
-              {detalleReparacion.ultima_actualizacion}
+              {detalleReparacion?.ultima_actualizacion || 'N/A'}
             </Descriptions.Item>
           </Descriptions>
         )}
@@ -581,7 +718,7 @@ function DetalleReparacion({ reparacionId, onVolver }) {
             </Text>
           </div>
         }
-        bordered={false}
+        variant="outlined"
         style={{ 
           marginBottom: 24, 
           borderRadius: 16,
@@ -591,9 +728,9 @@ function DetalleReparacion({ reparacionId, onVolver }) {
         }}
       >
         <Descriptions bordered column={2} size="middle">
-          <Descriptions.Item label="Nombre">{detalleReparacion.tecnico?.nombre}</Descriptions.Item>
-          <Descriptions.Item label="No. Técnico">{detalleReparacion.tecnico?.numero}</Descriptions.Item>
-          <Descriptions.Item label="Email" span={2}>{detalleReparacion.tecnico?.email}</Descriptions.Item>
+          <Descriptions.Item label="Nombre">{detalleReparacion.tecnico?.nombre || detalleReparacion.tecnico?.name || 'N/A'}</Descriptions.Item>
+          <Descriptions.Item label="No. Técnico">{detalleReparacion.tecnico?.numero || 'N/A'}</Descriptions.Item>
+          <Descriptions.Item label="Email" span={2}>{detalleReparacion.tecnico?.email || 'N/A'}</Descriptions.Item>
         </Descriptions>
       </Card>
 
@@ -609,7 +746,7 @@ function DetalleReparacion({ reparacionId, onVolver }) {
             </Text>
           </div>
         }
-        bordered={false}
+        variant="outlined"
         style={{ 
           marginBottom: 24, 
           borderRadius: 16,
@@ -622,11 +759,11 @@ function DetalleReparacion({ reparacionId, onVolver }) {
           <Spin style={{ display: 'block', margin: '40px auto' }} />
         ) : actualizaciones.length > 0 ? (
           <Timeline
-            mode="left"
+            mode="start"
             items={actualizaciones.map((act) => ({
               key: act.id,
-              dot: <ClockCircleOutlined style={{ fontSize: '16px', color: estadoConfig[act.estado_nuevo]?.border || '#1890ff' }} />,
-              children: (
+              icon: <ClockCircleOutlined style={{ fontSize: '16px', color: estadoConfig[act.estado_nuevo]?.border || '#1890ff' }} />,
+              content: (
                 <div style={{ marginLeft: 20 }}>
                   <div style={{ marginBottom: 8 }}>
                     <Tag color={estadoConfig[act.estado_anterior]?.color} style={{ marginRight: 8 }}>
@@ -638,21 +775,27 @@ function DetalleReparacion({ reparacionId, onVolver }) {
                     </Tag>
                   </div>
                   <Text strong style={{ display: 'block', marginBottom: 4, color: '#333' }}>
-                    {act.descripcion}
+                    {act.descripcion || 'Sin descripción'}
                   </Text>
                   <div style={{ marginTop: 8, fontSize: 12, color: '#666' }}>
                     <Text type="secondary">
-                      <strong>Técnico:</strong> {act.tecnico?.nombre} ({act.tecnico?.numero})
+                      <strong>Técnico:</strong> {act.tecnico?.nombre || act.tecnico?.name || 'N/A'} ({act.tecnico?.numero || 'N/A'})
                     </Text>
                     <br />
                     <Text type="secondary">
-                      <strong>Fecha:</strong> {new Date(act.fecha).toLocaleString('es-ES', {
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit'
-                      })}
+                      <strong>Fecha:</strong> {act.fecha ? (() => {
+                        try {
+                          return new Date(act.fecha).toLocaleString('es-ES', {
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          });
+                        } catch (e) {
+                          return act.fecha || 'N/A';
+                        }
+                      })() : 'N/A'}
                     </Text>
                   </div>
                 </div>
@@ -843,14 +986,16 @@ function DetalleReparacion({ reparacionId, onVolver }) {
       </Modal>
 
       {/* Documento oculto para impresión */}
-      <div style={{ display: 'none' }}>
-        <div ref={documentoRef}>
-          <DocumentoEntrega 
-            reparacion={detalleReparacion} 
-            actualizaciones={actualizaciones}
-          />
+      {detalleReparacion && (
+        <div style={{ display: 'none' }}>
+          <div ref={documentoRef}>
+            <DocumentoEntrega 
+              reparacion={detalleReparacion} 
+              actualizaciones={actualizaciones || []}
+            />
+          </div>
         </div>
-      </div>
+      )}
 
       <style>{`
         .ant-card-head-title {
@@ -889,6 +1034,16 @@ function DetalleReparacion({ reparacionId, onVolver }) {
         }
         .ant-divider {
           margin: 24px 0;
+        }
+        .ant-image {
+          border-radius: 8px;
+        }
+        .ant-image-preview-wrap {
+          z-index: 9999;
+        }
+        .custom-image-mask {
+          background: rgba(0, 0, 0, 0.5);
+          border-radius: 4px;
         }
       `}</style>
     </div>

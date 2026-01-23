@@ -103,7 +103,11 @@ function DocumentoEntrega({ reparacion, actualizaciones }) {
           <tbody>
             <tr>
               <td style={styles.labelCell}><strong>Plantel / Usuario:</strong></td>
-              <td style={styles.valueCell}>{reparacion?.bien?.plantel || 'N/A'}</td>
+              <td style={styles.valueCell}>
+                {typeof reparacion?.bien?.plantel === 'string' 
+                  ? reparacion.bien.plantel 
+                  : reparacion?.bien?.plantel?.nombre || reparacion?.bien?.plantel?.name || 'N/A'}
+              </td>
             </tr>
             <tr>
               <td style={styles.labelCell}><strong>Tipo de Equipo:</strong></td>
@@ -127,7 +131,11 @@ function DocumentoEntrega({ reparacion, actualizaciones }) {
             </tr>
             <tr>
               <td style={styles.labelCell}><strong>Entidad:</strong></td>
-              <td style={styles.valueCell}>{reparacion?.bien?.entidad || 'N/A'}</td>
+              <td style={styles.valueCell}>
+                {typeof reparacion?.bien?.entidad === 'string' 
+                  ? reparacion.bien.entidad 
+                  : reparacion?.bien?.entidad?.nombre || reparacion?.bien?.entidad?.name || 'N/A'}
+              </td>
             </tr>
             {reparacion?.bien?.especificaciones && (
               <tr>

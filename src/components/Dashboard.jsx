@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Input, Card, Table, Tag, Typography, Spin, Row, Col, Space, Select, Divider, Modal, Descriptions, Button, Timeline, Form, message, AutoComplete, Tooltip } from 'antd';
-import { SearchOutlined, ToolOutlined, InboxOutlined, CheckCircleOutlined, SendOutlined, EyeOutlined, PlusOutlined, EditOutlined } from '@ant-design/icons';
+import { Input, Card, Table, Tag, Typography, Spin, Row, Col, Space, Select, Divider, Modal, Descriptions, Button, Timeline, Form, message, AutoComplete, Tooltip, Upload } from 'antd';
+import { SearchOutlined, ToolOutlined, InboxOutlined, CheckCircleOutlined, SendOutlined, EyeOutlined, PlusOutlined, EditOutlined, UploadOutlined, DeleteOutlined } from '@ant-design/icons';
 import { api } from '../services/api';
 
 const { Text, Title } = Typography;
@@ -216,6 +216,7 @@ function Dashboard({ onVerDetalle }) {
         especificaciones: bien.especificaciones || '',
         plantel_id: bien.plantel_id || undefined,
         entidad_id: bien.entidad_id || undefined,
+        imagenes_bien: [], // Limpiar imágenes al seleccionar un bien existente
       });
     }
   };
@@ -232,11 +233,79 @@ function Dashboard({ onVerDetalle }) {
   const cerrarModalNuevaReparacion = () => {
     setModalNuevaReparacion(false);
     form.resetFields();
+    // Limpiar también las imágenes del formulario
+    form.setFieldsValue({ imagenes_bien: [] });
   };
 
   const guardarNuevaReparacion = async (valores) => {
     setGuardando(true);
     try {
+      // Verificar si el bien existe
+      const bienExistente = bienes.find(b => b.numero_inventario === valores.numero_inventario);
+      
+      // Si el bien no existe, crearlo primero (especialmente si hay imágenes)
+      if (!bienExistente) {
+        const datosBien = {
+          numero_inventario: valores.numero_inventario,
+          tipo_bien: valores.tipo_bien,
+          marca: valores.marca,
+          modelo: valores.modelo || null,
+          numero_serie: valores.numero_serie || null,
+          especificaciones: valores.especificaciones || null,
+          plantel_id: valores.plantel_id,
+          entidad_id: valores.entidad_id,
+        };
+
+        // Si hay imágenes, usar el endpoint de bienes que soporta FormData
+        console.log('🔍 Verificando imágenes en valores:', valores.imagenes_bien);
+        
+        if (valores.imagenes_bien && valores.imagenes_bien.length > 0) {
+          console.log('📋 Total de archivos en imagenes_bien:', valores.imagenes_bien.length);
+          
+          // Filtrar solo los archivos válidos que tienen originFileObj
+          const archivosValidos = valores.imagenes_bien.filter((img, index) => {
+            const tieneArchivo = img && (img.originFileObj || img instanceof File);
+            console.log(`  Archivo ${index + 1}:`, {
+              nombre: img?.name,
+              tieneOriginFileObj: !!img?.originFileObj,
+              esFile: img instanceof File,
+              objeto: img
+            });
+            if (!tieneArchivo) {
+              console.warn(`  ✗ Archivo ${index + 1} sin originFileObj:`, img);
+            }
+            return tieneArchivo;
+          });
+          
+          console.log('✅ Archivos válidos encontrados:', archivosValidos.length, 'de', valores.imagenes_bien.length);
+          
+          if (archivosValidos.length > 0) {
+            console.log('📤 Creando bien con', archivosValidos.length, 'imagen(es)');
+            console.log('Datos del bien:', datosBien);
+            
+            const resBien = await api.crearBien(datosBien, archivosValidos);
+            
+            if (!resBien.exito) {
+              console.error('❌ Error al crear bien:', resBien);
+              message.error(resBien.mensaje || 'Error al crear el bien');
+              return;
+            }
+            
+            console.log('✅ Bien creado exitosamente:', resBien.datos);
+            message.success(`Bien creado correctamente con ${archivosValidos.length} imagen(es)`);
+            // Recargar la lista de bienes
+            await cargarBienes();
+          } else {
+            console.error('❌ No se encontraron archivos válidos. Total de archivos:', valores.imagenes_bien.length);
+            console.error('Archivos recibidos:', JSON.stringify(valores.imagenes_bien, null, 2));
+            message.error('Las imágenes no se pudieron procesar. Por favor, vuelva a seleccionar las imágenes.');
+          }
+        } else {
+          console.log('ℹ️ No hay imágenes para subir');
+        }
+        // Si no hay imágenes, el bien se creará automáticamente al crear la reparación
+      }
+
       const datos = {
         nombre_cliente: valores.nombre_cliente,
         telefono_cliente: valores.telefono_cliente || null,
@@ -489,7 +558,7 @@ function Dashboard({ onVerDetalle }) {
     <div style={{ padding: '0 4px' }}>
       {/* Header principal con más profundidad */}
       <Card
-        bordered={false}
+        variant="outlined"
         style={{
           marginBottom: 32,
           borderRadius: 16,
@@ -497,7 +566,7 @@ function Dashboard({ onVerDetalle }) {
           boxShadow: '0 1px 3px rgba(0,0,0,0.05), 0 4px 12px rgba(0,0,0,0.08)',
           border: '1px solid rgba(0,0,0,0.04)',
         }}
-        bodyStyle={{ padding: '24px 32px' }}
+        styles={{ body: { padding: '24px 32px' } }}
       >
         <div style={{ 
           display: 'flex', 
@@ -557,7 +626,7 @@ function Dashboard({ onVerDetalle }) {
 
       {/* Tabla con filtros integrados - Mejorado */}
       <Card 
-        bordered={false}
+        variant="outlined"
         style={{ 
           borderRadius: 16,
           background: '#ffffff',
@@ -565,7 +634,7 @@ function Dashboard({ onVerDetalle }) {
           border: '1px solid rgba(0,0,0,0.04)',
           overflow: 'hidden'
         }}
-        bodyStyle={{ padding: 0 }}
+        styles={{ body: { padding: 0 } }}
       >
         {/* Header de la tabla */}
         <div style={{
@@ -889,6 +958,7 @@ function Dashboard({ onVerDetalle }) {
                         especificaciones: '',
                         plantel_id: undefined,
                         entidad_id: undefined,
+                        imagenes_bien: [],
                       });
                     }
                   }}
@@ -1007,6 +1077,96 @@ function Dashboard({ onVerDetalle }) {
                   rows={3} 
                   placeholder="Especificaciones técnicas (opcional)" 
                 />
+              </Form.Item>
+            </Col>
+          </Row>
+          <Row gutter={16}>
+            <Col xs={24}>
+              <Form.Item
+                name="imagenes_bien"
+                label="Imágenes del Bien"
+                tooltip="Puede subir múltiples imágenes del equipo (máximo 5MB por imagen, formatos: JPEG, PNG, JPG, GIF, WEBP)"
+                valuePropName="fileList"
+                getValueFromEvent={(e) => {
+                  // Cuando se retorna false en beforeUpload, el archivo se agrega a fileList
+                  // pero necesitamos asegurarnos de que mantenga el originFileObj
+                  if (Array.isArray(e)) {
+                    return e;
+                  }
+                  // e puede ser un objeto con fileList o directamente fileList
+                  const fileList = e?.fileList || e;
+                  console.log('📎 getValueFromEvent - Archivos capturados:', fileList?.length || 0);
+                  if (fileList && Array.isArray(fileList)) {
+                    fileList.forEach((file, index) => {
+                      if (file.originFileObj) {
+                        console.log(`  ✓ Archivo ${index + 1} tiene originFileObj:`, file.name);
+                      } else {
+                        console.warn(`  ✗ Archivo ${index + 1} SIN originFileObj:`, file.name, file);
+                      }
+                    });
+                  }
+                  return fileList || [];
+                }}
+              >
+                <Upload
+                  listType="picture-card"
+                  multiple
+                  accept="image/jpeg,image/png,image/jpg,image/gif,image/webp"
+                  beforeUpload={(file) => {
+                    const maxSize = 5 * 1024 * 1024; // 5MB (según documentación)
+                    const validTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/gif', 'image/webp'];
+                    
+                    console.log('📤 Archivo seleccionado:', file.name, `(${(file.size / 1024).toFixed(2)} KB)`, file.type);
+                    
+                    // Validar tamaño
+                    if (file.size > maxSize) {
+                      message.error(`La imagen ${file.name} excede el tamaño máximo de 5MB`);
+                      return Upload.LIST_IGNORE;
+                    }
+                    
+                    // Validar tipo
+                    if (!validTypes.includes(file.type)) {
+                      message.error(`El formato de ${file.name} no es válido. Use: JPEG, PNG, JPG, GIF o WEBP`);
+                      return Upload.LIST_IGNORE;
+                    }
+                    
+                    // Retornar false para prevenir subida automática pero permitir que se agregue a la lista
+                    // El archivo se agregará a fileList con originFileObj
+                    return false;
+                  }}
+                  maxCount={10}
+                  onChange={(info) => {
+                    // info.fileList contiene todos los archivos
+                    const fileList = info.fileList;
+                    console.log('🔄 Upload onChange - Total archivos:', fileList.length);
+                    
+                    // Verificar que cada archivo tenga originFileObj
+                    fileList.forEach((file, index) => {
+                      if (file.originFileObj) {
+                        console.log(`  ✓ Archivo ${index + 1}:`, file.name, `(${(file.originFileObj.size / 1024).toFixed(2)} KB)`);
+                      } else if (file.status === 'done') {
+                        // Archivo ya subido, no necesita originFileObj
+                        console.log(`  ✓ Archivo ${index + 1} (ya subido):`, file.name);
+                      } else {
+                        console.warn(`  ✗ Archivo ${index + 1} sin originFileObj:`, file.name, file);
+                      }
+                    });
+                    
+                    // Actualizar el formulario
+                    form.setFieldsValue({ imagenes_bien: fileList });
+                  }}
+                  onRemove={(file) => {
+                    const currentFiles = form.getFieldValue('imagenes_bien') || [];
+                    const newFiles = currentFiles.filter(f => f.uid !== file.uid);
+                    form.setFieldsValue({ imagenes_bien: newFiles });
+                    console.log('🗑️ Archivo removido. Archivos restantes:', newFiles.length);
+                  }}
+                >
+                  <div>
+                    <UploadOutlined />
+                    <div style={{ marginTop: 8 }}>Subir imagen</div>
+                  </div>
+                </Upload>
               </Form.Item>
             </Col>
           </Row>
