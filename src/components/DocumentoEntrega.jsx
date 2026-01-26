@@ -220,7 +220,7 @@ function DocumentoEntrega({ reparacion, actualizaciones }) {
           <div style={styles.signatureTitle}>TÉCNICO</div>
           <div style={styles.signatureLine}></div>
           <div style={styles.signatureInfo}>
-            <div style={styles.signatureName}>{reparacion?.tecnico?.nombre || 'N/A'}</div>
+            <div style={styles.signatureName}>{reparacion?.tecnico?.nombre || reparacion?.tecnico?.name || 'N/A'}</div>
             {reparacion?.tecnico?.numero && (
               <div style={styles.signatureNumber}>{reparacion.tecnico.numero}</div>
             )}

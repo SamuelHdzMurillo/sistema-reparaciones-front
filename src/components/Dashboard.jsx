@@ -497,6 +497,7 @@ function Dashboard({ onVerDetalle }) {
     {
       title: 'Técnico',
       dataIndex: ['tecnico', 'name'],
+      render: (_, record) => record?.tecnico?.name || record?.tecnico?.nombre || 'N/A',
     },
     {
       title: 'Estado',
@@ -508,8 +509,30 @@ function Dashboard({ onVerDetalle }) {
     {
       title: 'Fecha',
       dataIndex: 'updated_at',
-      render: (fecha) => new Date(fecha).toLocaleDateString(),
-      sorter: (a, b) => new Date(a.updated_at) - new Date(b.updated_at),
+      render: (_, record) => {
+        // Intentar usar updated_at, luego created_at, luego fecha_recepcion, y finalmente fecha actual
+        const fecha = record?.updated_at || record?.created_at || record?.fecha_recepcion || new Date().toISOString();
+        try {
+          const fechaObj = new Date(fecha);
+          if (isNaN(fechaObj.getTime())) {
+            // Si la fecha es inválida, usar la fecha actual
+            return new Date().toLocaleDateString('es-ES');
+          }
+          return fechaObj.toLocaleDateString('es-ES');
+        } catch (e) {
+          // Si hay error, usar la fecha actual
+          return new Date().toLocaleDateString('es-ES');
+        }
+      },
+      sorter: (a, b) => {
+        try {
+          const fechaA = a.updated_at || a.created_at || a.fecha_recepcion || new Date().toISOString();
+          const fechaB = b.updated_at || b.created_at || b.fecha_recepcion || new Date().toISOString();
+          return new Date(fechaA) - new Date(fechaB);
+        } catch (e) {
+          return 0;
+        }
+      },
     },
     {
       title: 'Acciones',
