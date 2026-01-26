@@ -17,9 +17,27 @@ function DocumentoEntrega({ reparacion, actualizaciones }) {
   const numeroOrden = `${reparacion?.id || 'N/A'}/${new Date().getFullYear().toString().slice(-2)}`;
 
   // Obtener la última actualización que tenga descripción del trabajo realizado
-  const ultimaActualizacion = actualizaciones && actualizaciones.length > 0 
-    ? actualizaciones[actualizaciones.length - 1] 
-    : null;
+  // Ordenar por fecha (más reciente primero) y buscar la que tenga descripción
+  const ultimaActualizacion = React.useMemo(() => {
+    if (!actualizaciones || actualizaciones.length === 0) {
+      return null;
+    }
+    
+    // Ordenar por fecha descendente (más reciente primero)
+    const actualizacionesOrdenadas = [...actualizaciones].sort((a, b) => {
+      const fechaA = a.fecha ? new Date(a.fecha).getTime() : 0;
+      const fechaB = b.fecha ? new Date(b.fecha).getTime() : 0;
+      return fechaB - fechaA; // Orden descendente
+    });
+    
+    // Buscar la primera actualización que tenga descripción
+    const actualizacionConDescripcion = actualizacionesOrdenadas.find(
+      act => act.descripcion && act.descripcion.trim() !== ''
+    );
+    
+    // Si no hay ninguna con descripción, usar la más reciente de todas
+    return actualizacionConDescripcion || actualizacionesOrdenadas[0] || null;
+  }, [actualizaciones]);
 
   return (
     <>
@@ -151,6 +169,12 @@ function DocumentoEntrega({ reparacion, actualizaciones }) {
                 <td style={styles.valueCell}>{reparacion.bien.especificaciones}</td>
               </tr>
             )}
+            {reparacion?.accesorios_incluidos && (
+              <tr>
+                <td style={styles.labelCell}><strong>Accesorios Incluidos:</strong></td>
+                <td style={styles.valueCell}>{reparacion.accesorios_incluidos}</td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
@@ -171,23 +195,14 @@ function DocumentoEntrega({ reparacion, actualizaciones }) {
         </table>
       </div>
 
-      {ultimaActualizacion && (
-        <div style={styles.section}>
-          <div style={styles.sectionTitle}>TRABAJO REALIZADO - DESCRIPCIÓN</div>
-          <div style={styles.descriptionBox}>
-            {ultimaActualizacion.descripcion || 'Reparación completada exitosamente.'}
-          </div>
+      <div style={styles.section}>
+        <div style={styles.sectionTitle}>TRABAJO REALIZADO - DESCRIPCIÓN</div>
+        <div style={styles.descriptionBox}>
+          {ultimaActualizacion?.descripcion 
+            ? ultimaActualizacion.descripcion 
+            : 'Reparación completada exitosamente.'}
         </div>
-      )}
-
-      {reparacion?.accesorios_incluidos && (
-        <div style={styles.section}>
-          <div style={styles.sectionTitle}>ACCESORIOS INCLUIDOS</div>
-          <div style={styles.descriptionBox}>
-            {reparacion.accesorios_incluidos}
-          </div>
-        </div>
-      )}
+      </div>
 
       <div style={styles.section}>
         <div style={styles.sectionTitle}>OBSERVACIONES</div>
