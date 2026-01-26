@@ -246,12 +246,30 @@ function DocumentoEntrega({ reparacion, actualizaciones }) {
           .map(url => url.trim());
         
         if (imagenesValidas.length > 0) {
+          // Calcular el ancho dinámico según la cantidad de imágenes
+          // Nunca usar más de 3 columnas para que las imágenes se vean bien
+          const getImageWidth = (total) => {
+            if (total === 1) return '98%';
+            if (total === 2) return '49%';
+            // 3 o más imágenes: máximo 3 columnas
+            return '32.5%';
+          };
+          
+          const imageWidth = getImageWidth(imagenesValidas.length);
+          
           return (
             <div style={styles.section}>
               <div style={styles.sectionTitle}>IMÁGENES DEL BIEN</div>
               <div style={styles.imagesContainer}>
                 {imagenesValidas.map((url, index) => (
-                  <div key={index} style={styles.imageWrapper}>
+                  <div 
+                    key={index} 
+                    style={{
+                      ...styles.imageWrapper,
+                      flex: `0 0 calc(${imageWidth} - 2px)`,
+                      maxWidth: `calc(${imageWidth} - 2px)`,
+                    }}
+                  >
                     <img
                       src={url}
                       alt={`Imagen ${index + 1} del bien`}
@@ -488,17 +506,15 @@ const styles = {
   imagesContainer: {
     display: 'flex',
     flexWrap: 'wrap',
-    gap: '8px',
-    justifyContent: 'flex-start',
-    padding: '8px',
+    gap: '4px',
+    justifyContent: 'center',
+    padding: '6px',
     border: '1px solid #d0d0d0',
     borderRadius: '4px',
     backgroundColor: '#f8f9fa',
   },
   imageWrapper: {
-    flex: '0 0 calc(50% - 4px)',
-    maxWidth: 'calc(50% - 4px)',
-    marginBottom: '8px',
+    marginBottom: '5px',
     border: '1px solid #d0d0d0',
     borderRadius: '4px',
     overflow: 'hidden',
@@ -509,7 +525,7 @@ const styles = {
     width: '100%',
     height: 'auto',
     display: 'block',
-    maxHeight: '150mm',
+    maxHeight: '180mm',
     objectFit: 'contain',
   },
   imageLabel: {
