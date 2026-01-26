@@ -507,6 +507,25 @@ function Dashboard({ onVerDetalle }) {
       ),
     },
     {
+      title: 'Orden Firmada',
+      width: 120,
+      render: (_, record) => {
+        if (record?.orden_firmada) {
+          return (
+            <Button
+              type="link"
+              icon={<EyeOutlined />}
+              onClick={() => window.open(record.orden_firmada, '_blank')}
+              size="small"
+            >
+              Ver
+            </Button>
+          );
+        }
+        return <Text type="secondary">-</Text>;
+      },
+    },
+    {
       title: 'Fecha',
       dataIndex: 'updated_at',
       render: (_, record) => {

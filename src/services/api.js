@@ -140,6 +140,88 @@ export const api = {
     return response.json();
   },
 
+  actualizarOrdenFirmada: async (reparacionId, archivoItem) => {
+    const formData = new FormData();
+    
+    console.log('📤 Preparando FormData para actualizar orden firmada');
+    console.log('Archivo item recibido:', archivoItem);
+    console.log('Tipo de archivoItem:', typeof archivoItem);
+    console.log('Keys de archivoItem:', Object.keys(archivoItem || {}));
+    
+    // Extraer el archivo real del objeto, igual que con las imágenes
+    // Ant Design Upload guarda el archivo en originFileObj
+    const archivo = archivoItem.originFileObj || archivoItem;
+    
+    console.log('📄 Archivo extraído:', archivo);
+    console.log('📄 Tipo de archivo:', typeof archivo);
+    console.log('📄 Es File:', archivo instanceof File);
+    console.log('📄 Es Blob:', archivo instanceof Blob);
+    
+    if (archivo && archivo instanceof File) {
+      // Agregar el archivo con el nombre correcto
+      formData.append('orden_firmada', archivo, archivo.name);
+      console.log('✓ Archivo agregado al FormData:', {
+        nombre: archivo.name,
+        tamaño: `${(archivo.size / 1024).toFixed(2)} KB`,
+        tipo: archivo.type
+      });
+      
+      // Verificar que el archivo esté en el FormData
+      const archivoEnFormData = formData.get('orden_firmada');
+      console.log('🔍 Archivo en FormData:', archivoEnFormData);
+      console.log('🔍 Tipo en FormData:', archivoEnFormData instanceof File);
+      console.log('🔍 Nombre en FormData:', archivoEnFormData?.name);
+      console.log('🔍 Tamaño en FormData:', archivoEnFormData?.size);
+      
+      if (!archivoEnFormData || !(archivoEnFormData instanceof File)) {
+        console.error('❌ ERROR: El archivo no se agregó correctamente al FormData');
+        throw new Error('No se pudo agregar el archivo al formulario');
+      }
+    } else {
+      console.error('❌ El archivo no es válido:', {
+        archivoItem,
+        archivo,
+        tieneOriginFileObj: !!archivoItem?.originFileObj,
+        esFile: archivo instanceof File,
+        esBlob: archivo instanceof Blob
+      });
+      throw new Error('El archivo no es válido');
+    }
+    
+    // Mostrar resumen del FormData
+    console.log('📋 Resumen del FormData:');
+    for (let pair of formData.entries()) {
+      if (pair[1] instanceof File) {
+        console.log(`  ${pair[0]}: [File] ${pair[1].name} (${(pair[1].size / 1024).toFixed(2)} KB)`);
+      } else {
+        console.log(`  ${pair[0]}: ${pair[1]}`);
+      }
+    }
+    
+    // Laravel puede requerir _method para PUT con FormData
+    // Agregar _method=PUT al FormData para que Laravel lo procese correctamente
+    formData.append('_method', 'PUT');
+    
+    console.log('🚀 Enviando petición PUT a:', `${API_URL}/reparaciones/${reparacionId}`);
+    console.log('📋 FormData final - Verificando _method:', formData.get('_method'));
+    console.log('📋 FormData final - Verificando orden_firmada:', formData.get('orden_firmada'));
+    
+    const response = await fetch(`${API_URL}/reparaciones/${reparacionId}`, {
+      method: "POST", // Usar POST con _method=PUT para Laravel
+      headers: {
+        Accept: "application/json",
+        Authorization: `Bearer ${getToken()}`,
+        // NO incluir Content-Type, el navegador lo establece automáticamente
+      },
+      body: formData,
+    });
+    
+    const result = await response.json();
+    console.log('📥 Respuesta del servidor:', result);
+    
+    return result;
+  },
+
   crearBien: async (datos, imagenes = []) => {
     const formData = new FormData();
     

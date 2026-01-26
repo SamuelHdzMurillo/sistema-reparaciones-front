@@ -1,11 +1,12 @@
 import { useState, useEffect, useRef } from 'react';
 import { 
   Card, Tag, Typography, Spin, Descriptions, Button, Timeline, 
-  Divider, Modal, Form, Input, Select, message, Space, Row, Col
+  Divider, Modal, Form, Input, Select, message, Space, Row, Col, Upload
 } from 'antd';
 import { 
   ArrowLeftOutlined, PrinterOutlined, EditOutlined, 
-  ClockCircleOutlined, PlusOutlined, PictureOutlined 
+  ClockCircleOutlined, PlusOutlined, PictureOutlined, 
+  FileTextOutlined, UploadOutlined, EyeOutlined
 } from '@ant-design/icons';
 import { api } from '../services/api';
 import DocumentoEntrega from './DocumentoEntrega';
@@ -58,6 +59,9 @@ function DetalleReparacion({ reparacionId, onVolver }) {
   const [modalNuevaActualizacion, setModalNuevaActualizacion] = useState(false);
   const [formNuevaActualizacion] = Form.useForm();
   const [guardandoNuevaActualizacion, setGuardandoNuevaActualizacion] = useState(false);
+  const [modalOrdenFirmada, setModalOrdenFirmada] = useState(false);
+  const [formOrdenFirmada] = Form.useForm();
+  const [subiendoOrdenFirmada, setSubiendoOrdenFirmada] = useState(false);
   const documentoRef = useRef(null);
 
   useEffect(() => {
@@ -221,6 +225,58 @@ function DetalleReparacion({ reparacionId, onVolver }) {
       message.error('Error de conexión con el servidor');
     } finally {
       setGuardandoNuevaActualizacion(false);
+    }
+  };
+
+  const abrirModalOrdenFirmada = () => {
+    formOrdenFirmada.setFieldsValue({
+      orden_firmada: [],
+    });
+    setModalOrdenFirmada(true);
+  };
+
+  const cerrarModalOrdenFirmada = () => {
+    setModalOrdenFirmada(false);
+    formOrdenFirmada.resetFields();
+    formOrdenFirmada.setFieldsValue({ orden_firmada: [] });
+  };
+
+  const guardarOrdenFirmada = async (valores) => {
+    // El valor ya es el fileList (array) directamente - igual que con las imágenes
+    const fileList = valores.orden_firmada;
+    
+    console.log('🔍 Valores del formulario:', valores);
+    console.log('📋 FileList recibido:', fileList);
+    
+    if (!fileList || !Array.isArray(fileList) || fileList.length === 0) {
+      message.warning('Por favor, seleccione un archivo');
+      return;
+    }
+
+    // Pasar el objeto del fileList directamente, igual que con las imágenes
+    const archivoItem = fileList[0];
+    
+    console.log('📄 Archivo item:', archivoItem);
+    console.log('📄 Tiene originFileObj:', !!archivoItem?.originFileObj);
+    console.log('📄 Es File:', archivoItem instanceof File);
+
+    setSubiendoOrdenFirmada(true);
+    try {
+      // Pasar el objeto completo del fileList, la función API extraerá el archivo
+      const res = await api.actualizarOrdenFirmada(reparacionId, archivoItem);
+      
+      if (res.exito) {
+        message.success('Orden firmada subida correctamente');
+        cerrarModalOrdenFirmada();
+        cargarDetalle();
+      } else {
+        message.error(res.mensaje || 'Error al subir la orden firmada');
+      }
+    } catch (error) {
+      console.error('❌ Error al subir orden firmada:', error);
+      message.error('Error de conexión con el servidor');
+    } finally {
+      setSubiendoOrdenFirmada(false);
     }
   };
 
@@ -437,24 +493,82 @@ function DetalleReparacion({ reparacionId, onVolver }) {
                 Estado
               </Button>
               {detalleReparacion?.estado === 'listo' && (
-                <Button
-                  type="primary"
-                  icon={<PrinterOutlined />}
-                  onClick={imprimirDocumento}
-                  size="large"
-                  style={{ 
-                    background: '#2e7d32', 
-                    borderColor: '#2e7d32',
-                    borderRadius: 8,
-                    height: 40,
-                    paddingLeft: 20,
-                    paddingRight: 20,
-                    fontWeight: 500,
-                    boxShadow: '0 2px 4px rgba(46, 125, 50, 0.2)'
-                  }}
-                >
-                  Imprimir
-                </Button>
+                <>
+                  {detalleReparacion?.orden_firmada ? (
+                    <Space>
+                      <Button
+                        type="primary"
+                        icon={<EyeOutlined />}
+                        onClick={() => window.open(detalleReparacion.orden_firmada, '_blank')}
+                        size="large"
+                        style={{ 
+                          background: '#9c27b0', 
+                          borderColor: '#9c27b0',
+                          borderRadius: 8,
+                          height: 40,
+                          paddingLeft: 20,
+                          paddingRight: 20,
+                          fontWeight: 500,
+                          boxShadow: '0 2px 4px rgba(156, 39, 176, 0.2)'
+                        }}
+                      >
+                        Ver Orden
+                      </Button>
+                      <Button
+                        type="default"
+                        icon={<FileTextOutlined />}
+                        onClick={abrirModalOrdenFirmada}
+                        size="large"
+                        style={{ 
+                          borderRadius: 8,
+                          height: 40,
+                          paddingLeft: 20,
+                          paddingRight: 20,
+                          fontWeight: 500
+                        }}
+                      >
+                        Actualizar
+                      </Button>
+                    </Space>
+                  ) : (
+                    <Button
+                      type="primary"
+                      icon={<FileTextOutlined />}
+                      onClick={abrirModalOrdenFirmada}
+                      size="large"
+                      style={{ 
+                        background: '#9c27b0', 
+                        borderColor: '#9c27b0',
+                        borderRadius: 8,
+                        height: 40,
+                        paddingLeft: 20,
+                        paddingRight: 20,
+                        fontWeight: 500,
+                        boxShadow: '0 2px 4px rgba(156, 39, 176, 0.2)'
+                      }}
+                    >
+                      Agregar Orden
+                    </Button>
+                  )}
+                  <Button
+                    type="primary"
+                    icon={<PrinterOutlined />}
+                    onClick={imprimirDocumento}
+                    size="large"
+                    style={{ 
+                      background: '#2e7d32', 
+                      borderColor: '#2e7d32',
+                      borderRadius: 8,
+                      height: 40,
+                      paddingLeft: 20,
+                      paddingRight: 20,
+                      fontWeight: 500,
+                      boxShadow: '0 2px 4px rgba(46, 125, 50, 0.2)'
+                    }}
+                  >
+                    Imprimir
+                  </Button>
+                </>
               )}
             </Space>
           </Col>
@@ -696,6 +810,20 @@ function DetalleReparacion({ reparacionId, onVolver }) {
             <Descriptions.Item label="Accesorios" span={2}>
               {detalleReparacion?.accesorios_incluidos || 'N/A'}
             </Descriptions.Item>
+            {detalleReparacion?.orden_firmada && (
+              <Descriptions.Item label="Orden Firmada" span={2}>
+                <Space>
+                  <Button
+                    type="link"
+                    icon={<EyeOutlined />}
+                    onClick={() => window.open(detalleReparacion.orden_firmada, '_blank')}
+                    style={{ padding: 0 }}
+                  >
+                    Ver documento
+                  </Button>
+                </Space>
+              </Descriptions.Item>
+            )}
             <Descriptions.Item label="Fecha Recepción">
               {detalleReparacion?.fecha_recepcion || 'N/A'}
             </Descriptions.Item>
@@ -970,6 +1098,170 @@ function DetalleReparacion({ reparacionId, onVolver }) {
                   setModalActualizarEstado(false);
                   formEstado.resetFields();
                 }}
+                size="large"
+                style={{
+                  borderRadius: 8,
+                  paddingLeft: 24,
+                  paddingRight: 24,
+                  height: 40
+                }}
+              >
+                Cancelar
+              </Button>
+            </Space>
+          </Form.Item>
+        </Form>
+      </Modal>
+
+      {/* Modal para subir orden firmada */}
+      <Modal
+        title={
+          <div style={{ padding: '8px 0' }}>
+            <Title level={4} style={{ margin: 0, color: '#1a1a1a', fontWeight: 600 }}>
+              {detalleReparacion?.orden_firmada ? 'Actualizar Orden Firmada' : 'Agregar Orden Firmada'}
+            </Title>
+            <Text type="secondary" style={{ fontSize: 13, marginTop: 4, display: 'block' }}>
+              Reparación #{detalleReparacion?.id || ''}
+            </Text>
+          </div>
+        }
+        open={modalOrdenFirmada}
+        onCancel={cerrarModalOrdenFirmada}
+        footer={null}
+        width={600}
+        style={{ top: 40 }}
+        styles={{
+          body: { padding: '24px' }
+        }}
+      >
+        <Form
+          form={formOrdenFirmada}
+          layout="vertical"
+          onFinish={guardarOrdenFirmada}
+          autoComplete="off"
+        >
+          <Form.Item
+            name="orden_firmada"
+            label="Documento de Orden Firmada"
+            rules={[
+              { 
+                required: true, 
+                message: 'Seleccione un archivo',
+                validator: (_, value) => {
+                  if (!value || !Array.isArray(value) || value.length === 0) {
+                    return Promise.reject(new Error('Seleccione un archivo'));
+                  }
+                  return Promise.resolve();
+                }
+              }
+            ]}
+            valuePropName="fileList"
+            getValueFromEvent={(e) => {
+              console.log('🔧 getValueFromEvent llamado con:', e);
+              
+              // Cuando se retorna false en beforeUpload, el archivo se agrega a fileList
+              if (Array.isArray(e)) {
+                console.log('  ✓ Es array, retornando directamente');
+                return e;
+              }
+              
+              // e puede ser un objeto con fileList o directamente fileList
+              const fileList = e?.fileList || e;
+              console.log('  📋 FileList extraído:', fileList);
+              
+              // Asegurar que cada archivo tenga originFileObj si es necesario
+              if (fileList && Array.isArray(fileList)) {
+                fileList.forEach((file, index) => {
+                  if (!file.originFileObj && file instanceof File) {
+                    // Si el archivo es directamente un File, crear un objeto con originFileObj
+                    console.log(`  ⚠️ Archivo ${index + 1} no tiene originFileObj pero es File`);
+                  }
+                });
+              }
+              
+              return fileList || [];
+            }}
+          >
+            <Upload
+              beforeUpload={(file) => {
+                console.log('📤 Archivo seleccionado en beforeUpload:', file);
+                // Retornar false para prevenir subida automática
+                return false;
+              }}
+              maxCount={1}
+              accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+              onChange={(info) => {
+                // info.fileList contiene todos los archivos
+                const fileList = info.fileList;
+                console.log('🔄 Upload onChange - Total archivos:', fileList.length);
+                
+                // Verificar que cada archivo tenga originFileObj
+                fileList.forEach((file, index) => {
+                  if (file.originFileObj) {
+                    console.log(`  ✓ Archivo ${index + 1}:`, file.name, `(${(file.originFileObj.size / 1024).toFixed(2)} KB)`);
+                  } else if (file.status === 'done') {
+                    // Archivo ya subido, no necesita originFileObj
+                    console.log(`  ✓ Archivo ${index + 1} (ya subido):`, file.name);
+                  } else {
+                    console.warn(`  ✗ Archivo ${index + 1} sin originFileObj:`, file.name, file);
+                  }
+                });
+                
+                // Actualizar el formulario
+                formOrdenFirmada.setFieldsValue({ orden_firmada: fileList });
+              }}
+            >
+              <Button icon={<UploadOutlined />} size="large" style={{ width: '100%' }}>
+                Seleccionar archivo
+              </Button>
+            </Upload>
+            <Text type="secondary" style={{ fontSize: 12, marginTop: 8, display: 'block' }}>
+              Formatos permitidos: PDF, JPG, PNG, DOC, DOCX
+            </Text>
+          </Form.Item>
+          {detalleReparacion?.orden_firmada && (
+            <div style={{ 
+              marginBottom: 16, 
+              padding: 12, 
+              backgroundColor: '#f0f7ff', 
+              borderRadius: 8,
+              border: '1px solid #91caff'
+            }}>
+              <Text strong style={{ display: 'block', marginBottom: 8 }}>
+                Documento actual:
+              </Text>
+              <Button
+                type="link"
+                icon={<EyeOutlined />}
+                onClick={() => window.open(detalleReparacion.orden_firmada, '_blank')}
+                style={{ padding: 0 }}
+              >
+                Ver documento actual
+              </Button>
+            </div>
+          )}
+          <Form.Item style={{ marginTop: 32, marginBottom: 0 }}>
+            <Space>
+              <Button 
+                type="primary" 
+                htmlType="submit" 
+                loading={subiendoOrdenFirmada}
+                size="large"
+                style={{ 
+                  background: '#9c27b0', 
+                  borderColor: '#9c27b0',
+                  borderRadius: 8,
+                  paddingLeft: 24,
+                  paddingRight: 24,
+                  height: 40,
+                  fontWeight: 500,
+                  boxShadow: '0 2px 4px rgba(156, 39, 176, 0.2)'
+                }}
+              >
+                {detalleReparacion?.orden_firmada ? 'Actualizar' : 'Subir'}
+              </Button>
+              <Button 
+                onClick={cerrarModalOrdenFirmada}
                 size="large"
                 style={{
                   borderRadius: 8,
