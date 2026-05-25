@@ -10,6 +10,16 @@ export const api = {
       },
       body: JSON.stringify({ email, password }),
     });
+
+    const contentType = response.headers.get("content-type") || "";
+    if (!contentType.includes("application/json")) {
+      throw new Error(
+        response.ok
+          ? "El servidor no devolvió JSON. Verifica VITE_API_URL en .env."
+          : `Error ${response.status}. Revisa que la URL incluya /sistema_reparaciones/public/api`
+      );
+    }
+
     return response.json();
   },
 

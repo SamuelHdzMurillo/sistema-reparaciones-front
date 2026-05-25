@@ -21,7 +21,7 @@ function Login({ onLogin }) {
         message.error(response.mensaje || "Error al iniciar sesión");
       }
     } catch (err) {
-      message.error("Error de conexión con el servidor");
+      message.error(err.message || "Error de conexión con el servidor");
     } finally {
       setLoading(false);
     }
